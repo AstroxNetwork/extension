@@ -3,7 +3,14 @@ import { useCallback, useMemo } from 'react';
 import * as bitcoin from 'bitcoinjs-lib';
 import { RawTxInfo, ToAddressInfo, TransferFtConfigInterface } from '@/shared/types';
 import { useTools } from '@/ui/components/ActionComponent';
-import { calculateFTFundsRequired, calculateFundsRequired, satoshisToAmount, satoshisToBTC, sleep, useWallet } from '@/ui/utils';
+import {
+  calculateFTFundsRequired,
+  calculateFundsRequired,
+  satoshisToAmount,
+  satoshisToBTC,
+  sleep,
+  useWallet
+} from '@/ui/utils';
 
 import { AppState } from '..';
 import { useAccountAddress, useAtomicals, useCurrentAccount } from '../accounts/hooks';
@@ -28,7 +35,7 @@ export function useCreateBitcoinTxCallback() {
   const fromAddress = useAccountAddress();
   // const utxos = useUtxos();
   // const fetchUtxos = useFetchUtxosCallback();
-  const atomicals = useAtomicals()
+  const atomicals = useAtomicals();
 
   return useCallback(
     async (toAddressInfo: ToAddressInfo, toAmount: number, feeRate?: number, receiverToPayFee = false) => {
@@ -86,7 +93,7 @@ export function useCreateARC20TxCallback() {
       transferOptions: TransferFtConfigInterface,
       toAddressInfo: ToAddressInfo,
       nonAtomUtxos: UTXO[],
-      satsbyte: number,
+      satsbyte: number
     ): Promise<RawTxInfo | undefined> => {
       if (transferOptions.type !== 'FT') {
         throw 'Atomical is not an FT. It is expected to be an FT type';
@@ -103,15 +110,15 @@ export function useCreateARC20TxCallback() {
       for (const utxo of transferOptions.selectedUtxos) {
         // Add the atomical input, the value from the input counts towards the total satoshi amount required
         const { output } = detectAddressTypeToScripthash(fromAddress);
-          psbt.addInput({
-            hash: utxo.txid,
-            index: utxo.index,
-            witnessUtxo: {
-              value: utxo.value,
-              script: Buffer.from(output as string, 'hex')
-            },
-            tapInternalKey: Buffer.from(xpub, 'hex')
-          });
+        psbt.addInput({
+          hash: utxo.txid,
+          index: utxo.index,
+          witnessUtxo: {
+            value: utxo.value,
+            script: Buffer.from(output as string, 'hex')
+          },
+          tapInternalKey: Buffer.from(xpub, 'hex')
+        });
         tokenBalanceIn += utxo.value;
         tokenInputsLength++;
       }
@@ -235,7 +242,7 @@ export function useCreateARCNFTTxCallback() {
       },
       toAddressInfo: ToAddressInfo,
       nonAtomUtxos: UTXO[],
-      satsbyte: number,
+      satsbyte: number
     ): Promise<RawTxInfo | undefined> => {
       const pubkey = account.pubkey;
       const xpub = (toXOnly(Buffer.from(pubkey, 'hex')) as Buffer).toString('hex');
@@ -244,7 +251,7 @@ export function useCreateARCNFTTxCallback() {
       try {
         detectAddressTypeToScripthash(toAddressInfo.address);
       } catch (e) {
-         return {
+        return {
           psbtHex: '',
           rawtx: '',
           toAddressInfo,
@@ -278,7 +285,7 @@ export function useCreateARCNFTTxCallback() {
       //   satsbyte,
       //   0
       // );
-      let expectedFundinng = 0
+      let expectedFundinng = 0;
       const expectedSatoshisDeposit = transferOptions.selectedUtxos.reduce((a, b) => {
         let ret = calculateFundsRequired(b.value, b.value, satsbyte).expectedSatoshisDeposit;
         if (ret < 0) {
