@@ -294,7 +294,7 @@ export const TO_LOCALE_STRING_CONFIG = {
 export const SATS_DOMAIN = '.sats';
 export const UNISAT_DOMAIN = '.unisat';
 
-export const GITHUB_URL = 'https://github.com/atomicals/atomicals-wallet-extension';
+export const GITHUB_URL = 'https://github.com/atomicalswallet/atomicals-wallet-extension';
 export const DISCORD_URL = 'https://discord.com/invite/atomicalsxyz';
 export const TWITTER_URL = 'https://twitter.com/atomicalswallet';
 export const ELECTRUMX_WSS = 'wss://electrumx.atomicals.xyz:50012'; //'ws://18.139.208.6:50001'// 'wss://electrumx.atomicals.xyz:50012';
