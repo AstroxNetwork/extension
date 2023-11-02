@@ -1384,11 +1384,10 @@ export class WalletController extends BaseController {
               mergedUTXOs.push(utxo);
             }
           }
-
-          if (findOrdinal) {
-            ordinalsUTXOs.push(utxo);
-            ordinalsValue += utxo.value;
-          }
+        }
+        if (findOrdinal) {
+          ordinalsUTXOs.push(utxo);
+          ordinalsValue += utxo.value;
         }
 
         if (!isAtomical && !findOrdinal) {
@@ -1419,7 +1418,7 @@ export class WalletController extends BaseController {
           atomicalMerged.push({
             ...find,
             atomicals: [item],
-            hasOrdinals: atomicalsWithOrdinalsUTXOs.some((e) => e.txid == find.txid && e.vout == e.vout),
+            hasOrdinals: atomicalsWithOrdinalsUTXOs.some((e) => e.txid == find.txid && e.vout == find.vout),
           });
         }
       } else if (atomical.type === 'FT') {
@@ -1442,6 +1441,7 @@ export class WalletController extends BaseController {
         atomicalNFTs.push(item);
       }
     }
+    console.log('oldOrdinals', oldOrdinals);
     const balance: IWalletBalance = {
       address,
       output,

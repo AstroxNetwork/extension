@@ -425,6 +425,10 @@ export default function SignPsbt({
       .filter((v) => v.address == address);
   }, [txInfo.decodedPsbt]);
 
+  const disabledInscriptions = useMemo(() => {
+    return txInfo.decodedPsbt.inputInfos.some(o => o.inscriptions.length > 0);
+  }, [txInfo.decodedPsbt]);
+
   const canChanged = useMemo(() => {
     let val = true;
     txInfo.decodedPsbt.inputInfos.forEach((v) => {
@@ -660,6 +664,9 @@ export default function SignPsbt({
             </Column>
           )}
         </Column>
+        {
+          disabledInscriptions && <Text text="Inscriptions can't be Sign & Pay" color="red" />
+        }
       </Content>
 
       <Footer>
@@ -669,7 +676,7 @@ export default function SignPsbt({
             preset="primary"
             text={type == TxType.SIGN_TX ? 'Sign' : 'Sign & Pay'}
             onClick={handleConfirm}
-            disabled={isValid == false}
+            disabled={isValid == false || disabledInscriptions}
             full
           />
         </Row>
