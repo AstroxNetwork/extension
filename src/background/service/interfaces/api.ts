@@ -270,6 +270,29 @@ export interface NameCandidate {
   reveal_location_height: number;
 }
 
+
+export interface IAtomicalBalanceItem {
+  atomical_id: string;
+  atomical_number: number;
+  confirmed: number;
+  request_ticker: string;
+  request_ticker_status: {
+    status: TickerStatus;
+    note: string;
+    verified_atomical_id: string;
+  };
+  subtype: 'decentralized';
+  ticker: string;
+  ticker_candidate: TickerCandidate[];
+  type: 'FT' | 'NFT';
+  data: IAtomicalBalanceItemData;
+  utxos: UTXO[];
+  full_realm_name?: string;
+  realm?: string;
+  relns?: any;
+  request_realm?: string;
+}
+
 export interface IAtomicalBalanceItemData {
   confirmed: boolean;
   atomical_id: string;
@@ -381,6 +404,7 @@ export interface IAtomicalItem {
 
 export type IMergedAtomicals = UTXO & {
   atomicals: IAtomicalItem[];
+  hasOrdinals: boolean;
 };
 
 export interface IWalletBalance {

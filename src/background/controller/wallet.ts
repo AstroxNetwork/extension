@@ -51,7 +51,7 @@ import { signBip322MessageSimple } from '../utils/bip322';
 import { publicKeyToAddress, toPsbtNetwork } from '../utils/tx-utils';
 import BaseController from './base';
 import { AtomicalService } from '../service/atomical';
-import { IAtomicalItem, IMergedAtomicals, IWalletBalance, UTXO as AtomUtxo } from '../service/interfaces/api';
+import { IAtomicalItem, IMergedAtomicals, IWalletBalance, UTXO as AtomUtxo, IAtomicalBalanceItem } from '../service/interfaces/api';
 import { MempoolService, mempoolService, mempoolServiceTest } from '../service/mempool';
 import { detectAddressTypeToScripthash } from '../service/utils';
 import { ElectrumApi } from '../service/eletrum';
@@ -1367,44 +1367,48 @@ export class WalletController extends BaseController {
         confirmedUTXOs.push(utxo);
 
         const isAtomical = utxo.atomicals && utxo.atomicals.length;
-        if (isAtomical) {
-          atomicalsValue += utxo.value;
-          atomicalsUTXOs.push(utxo);
-          if (utxo.atomicals!.length > 1) {
-            mergedUTXOs.push(utxo);
-          }
-        }
-
-        const find = oldOrdinals.find((item) => {
+        const findOrdinal = oldOrdinals.find((item) => {
           const split = item.output.split(':');
           return split[0] === utxo.txid && parseInt(split[1], 10) === utxo.vout;
         });
-
-        if (find) {
-          ordinalsUTXOs.push(utxo);
-          ordinalsValue += utxo.value;
-        }
-
-        if (find && isAtomical) {
+        if (findOrdinal && isAtomical) {
+          console.log(findOrdinal);
           atomicalsWithOrdinalsUTXOs.push(utxo);
           atomicalsWithOrdinalsValue += utxo.value;
+          mergedUTXOs.push(utxo);
+        } else {
+          if (isAtomical) {
+            atomicalsValue += utxo.value;
+            atomicalsUTXOs.push(utxo);
+            if (utxo.atomicals && utxo.atomicals.length > 1) {
+              mergedUTXOs.push(utxo);
+            }
+          }
+
+          if (findOrdinal) {
+            ordinalsUTXOs.push(utxo);
+            ordinalsValue += utxo.value;
+          }
         }
 
-        if (!isAtomical && !find) {
+        if (!isAtomical && !findOrdinal) {
           regularsUTXOs.push(utxo);
           regularsValue += utxo.value;
         }
       }
     }
+    const unconfirmedAtomicalIds = new Set(unconfirmedUTXOs.map((e) => e.atomicals).flat());
     const atomicalFTs: (IAtomicalItem & { utxos: AtomUtxo[] })[] = [];
     const atomicalNFTs: IAtomicalItem[] = [];
     const atomicalMerged: IMergedAtomicals[] = [];
-    for (const key in res.atomicals) {
-      const atomical = res.atomicals[key] as any;
+    const allAtomicals = res.atomicals || {};
+    for (const key in allAtomicals) {
+      const atomical = allAtomicals[key] as IAtomicalBalanceItem;
       const data = atomical.data;
       const item = {
         ...data,
-        value: atomical.confirmed
+        value: atomical.confirmed,
+        confirmed: !unconfirmedAtomicalIds.has(atomical.atomical_id),
       };
       const find = mergedUTXOs.find((e) => e.atomicals?.includes(atomical.atomical_id));
       if (find) {
@@ -1412,7 +1416,11 @@ export class WalletController extends BaseController {
         if (v) {
           v.atomicals.push(item);
         } else {
-          atomicalMerged.push({ ...find, atomicals: [item] });
+          atomicalMerged.push({
+            ...find,
+            atomicals: [item],
+            hasOrdinals: atomicalsWithOrdinalsUTXOs.some((e) => e.txid == find.txid && e.vout == e.vout),
+          });
         }
       } else if (atomical.type === 'FT') {
         const v = atomicalFTs.find((e) => e.$ticker === atomical.ticker);
@@ -1426,7 +1434,7 @@ export class WalletController extends BaseController {
               ...item,
               confirmed: true,
               utxos: utxos,
-              value: utxos.reduce((a, b) => a + b.value, 0)
+              value: utxos.reduce((a, b) => a + b.value, 0),
             });
           }
         }
@@ -1452,7 +1460,7 @@ export class WalletController extends BaseController {
       unconfirmedUTXOs,
       unconfirmedValue,
       atomicalsWithOrdinalsUTXOs,
-      atomicalsWithOrdinalsValue
+      atomicalsWithOrdinalsValue,
     };
 
     return balance;

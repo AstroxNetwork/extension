@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { KEYRING_TYPE } from '@/shared/constant';
 import { NetworkType, Inscription } from '@/shared/types';
-import { Card, Column, Content, Footer, Grid, Header, Icon, Layout, Row, Text } from '@/ui/components';
+import { Card, Column, Content, Footer, Grid, Header, Icon, Layout, Row, Text, Image, Tag } from '@/ui/components';
 import AccountSelect from '@/ui/components/AccountSelect';
 import { useTools } from '@/ui/components/ActionComponent';
 import { AddressBar } from '@/ui/components/AddressBar';
@@ -34,6 +34,7 @@ import { useNavigate } from '../MainRoute';
 import ARC20BalanceCard from '@/ui/components/ARC20BalanceCard';
 import ARC20NFTCard from '@/ui/components/ARC20NFTCard';
 import { IAtomicalItem } from '@/background/service/interfaces/api';
+import ORDI_IMG from '@/ui/assets/images/ordinals.png'
 
 export default function WalletTabScreen() {
   const navigate = useNavigate();
@@ -501,6 +502,33 @@ function ARC20List({ tabKey }: { tabKey: WalletTabScreenTabKey }) {
                     width: '100%'
                   }}>
                     <AtomicalView disabled items={utxo.atomicals} />
+                    {
+                      utxo.hasOrdinals && (
+                        <Card
+                          style={{
+                            backgroundColor: '#141414',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1,
+                            // width: 150,
+                            height: 120,
+                            minWidth: 150,
+                            minHeight: 120
+                          }}
+                          >
+                          <Column full justifyBetween>
+                            <Column full>
+                              <Row>
+                                <Tag preset="warning" text={'Ordinals'} />
+                              </Row>
+                              <Row justifyCenter mt='md'>
+                                <Image src={ORDI_IMG} size={24} />
+                              </Row>
+                            </Column>
+                            <Text text={'Ordinals\nAssets'} color="blue" size='xs' />
+                          </Column>
+                        </Card>
+                      )
+                    }
                   </Grid>
                 </Column>
               );
