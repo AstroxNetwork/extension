@@ -272,16 +272,7 @@ export function useCreateBitcoinTxCallback() {
       const signPsbt = Psbt.fromHex(s);
       const tx = signPsbt.extractTransaction();
       const rawtx = tx.toHex();
-      // const psbtHex = await wallet.sendBTC({
-      //   to: toAddressInfo.address,
-      //   amount: toAmount,
-      //   utxos: _utxos,
-      //   receiverToPayFee,
-      //   feeRate
-      // });
-      // const psbt = Psbt.fromHex(psbtHex);
-      // const rawtx = psbt.extractTransaction().toHex();
-      // const fee = psbt.getFee();
+
       dispatch(
         transactionsActions.updateBitcoinTx({
           rawtx,
@@ -298,7 +289,7 @@ export function useCreateBitcoinTxCallback() {
       };
       return rawTxInfo;
     },
-    [dispatch, wallet, fromAddress, atomicals]
+    [dispatch, wallet, fromAddress, atomicals, networkType]
   );
 }
 
@@ -440,7 +431,7 @@ export function useCreateARC20TxCallback() {
         };
       }
     },
-    [dispatch, wallet, account, fromAddress]
+    [dispatch, wallet, account, fromAddress, atomicals, networkType]
   );
 }
 
@@ -495,7 +486,7 @@ export function useCreateARCNFTTxCallback() {
       };
       return rawTxInfo;
     },
-    [dispatch, wallet, account, fromAddress]
+    [dispatch, wallet, account, fromAddress, atomicals, networkType]
   );
 }
 

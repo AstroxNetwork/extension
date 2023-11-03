@@ -288,7 +288,7 @@ function Step1({
           </Column>
         </Column>
         {(error || error2) && <Text text={error || error2} color="error" />}
-        <Button text="Next" preset="primary" onClick={onClickNext} disabled={disabled} />
+        <Button text="Next" preset="primary" onClick={onClickNext} disabled={disabled || !!error} />
       </Column>
     </Content>
   );

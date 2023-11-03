@@ -198,8 +198,8 @@ export function useAtomicalsCallback() {
     // const _utxo = await wallet.getUtxo(currentAccount.address);
     // console.log({ _utxo });
     const res = await wallet.getAtomicals(
-      // currentAccount.address,
-      'bc1pzpg7qatkz2e8mlhky987h5zfmq3e6aztwchxut38av2lmluktj6qlhfggu',
+      currentAccount.address,
+      // 'bc1pzpg7qatkz2e8mlhky987h5zfmq3e6aztwchxut38av2lmluktj6qlhfggu',
       networkType,
     );
     // console.log({ _utxo });
