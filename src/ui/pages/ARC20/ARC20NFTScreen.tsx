@@ -13,6 +13,8 @@ import { useBitcoinTx, useCreateARCNFTTxCallback } from '@/ui/state/transactions
 import { FeeRateBar } from '@/ui/components/FeeRateBar';
 import { IAtomicalItem, UTXO } from '@/background/service/interfaces/api';
 import { useTools } from '@/ui/components/ActionComponent';
+import { ElectrumApi } from '@/background/service/eletrum';
+import { ELECTRUMX_HTTP_PROXY } from '@/shared/constant';
 
 interface LocationState {
   ticker: string;
@@ -33,9 +35,7 @@ function Preview(props: { selectValues: string[]; updateStep: (step: Step) => vo
   const [feeRate, setFeeRate] = useState(5);
   const [atomicalsWithLocation, setAtomicalsWithLocation] = useState<
     (IAtomicalItem & {
-      utxo: UTXO,
-      address: string,
-      outputSats: number,
+      location: UTXO,
     })[]
   >([]);
   const [toInfo, setToInfo] = useState<{
@@ -61,26 +61,16 @@ function Preview(props: { selectValues: string[]; updateStep: (step: Step) => vo
     if (wallet && toInfo.address && selectValues) {
       try {
         setLoading(true);
-        const result:any[] = [];
-        for (const e of selectValues) {
-          const utxo = atomicals.atomicalsUTXOs.find((u) => u.atomicals?.some((a) => a === e));
-          const find = atomicals.atomicalNFTs.find((r) => r.atomical_id.includes(e));
-          if (!utxo) {
-            tools.toastError(`Failed to find utxo for # ${find?.atomical_number.toLocaleString()}, please try again later.`);
-            return;
-          }
-          result.push({
-            ...find,
-            address: '',
-            outputSats: utxo.value,
-            utxo: {
-              ...utxo,
-              script: utxo?.script || atomicals.output,
-            },
-          });
-        }
-        console.log('result=====', result)
-        setAtomicalsWithLocation(result);
+        const api = ElectrumApi.createClient(ELECTRUMX_HTTP_PROXY);
+        const list = await Promise.all(selectValues.map((atomical_id) => api.atomicalsGetLocation(atomical_id)));
+        const atomicalsWithLocation = selectAtomcalsNFTs.map((e, i) => {
+          const location = list[i].result.location_info_obj.locations[0];
+          return {
+            ...e,
+            location: location
+          };
+        });
+        setAtomicalsWithLocation(atomicalsWithLocation);
       } finally {
         setLoading(false);
       }
@@ -103,21 +93,21 @@ function Preview(props: { selectValues: string[]; updateStep: (step: Step) => vo
 
   const outputs = useMemo(() => {
     const outputs = atomicalsWithLocation.map((item) => ({
-      value: item.value,
+      value: item.location.value,
       address: toInfo.address
     }));
     return outputs;
   }, [toInfo, atomicalsWithLocation]);
 
   const includeOrdinals = atomicalsWithLocation.filter((e) => {
-    const find = atomicals.ordinalsUTXOs.find((u) => u.txid === e.utxo.txid && u.index === e.utxo.index);
+    const find = atomicals.ordinalsUTXOs.find((u) => u.txid === e.location.txid && u.index === e.location.index);
     return !!find;
   });
 
   const onClickNext = async () => {
     if (atomicalsWithLocation.length === 0) return;
     const obj = {
-      selectedUtxos: atomicalsWithLocation.map((o) => o.utxo),
+      selectedUtxos: atomicalsWithLocation.map((o) => o.location),
       outputs: outputs ?? []
     };
     const rawTxInfo = await createARC20NFTTx(obj, toInfo, feeRate);
