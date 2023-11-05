@@ -277,7 +277,7 @@ export async function calculateGasV2(
       // });
       if (transferOptions.regularsUTXOs && transferOptions.regularsUTXOs!.length > 0) {
         const _regulars = transferOptions.regularsUTXOs;
-        for (let i = 0; i <= transferOptions.regularsUTXOs.length; i += 1) {
+        for (let i = 0; i < transferOptions.regularsUTXOs.length; i += 1) {
           const utxo = _regulars[i];
           if (addedValue >= fee) {
             break;
@@ -365,8 +365,9 @@ export function tryDecodePunycode(name: string) {
   return name;
 }
 
-export function returnImageType(item: IAtomicalItem): { type: string; content: string; tag: string; buffer?: Buffer } {
-  let ct, content, type, tag, buffer;
+export function returnImageType(item: IAtomicalItem): { type: string; content: string; tag: string; contentType: string; buffer?: Buffer } {
+  let contentType, content, type, tag, buffer;
+  console.log(item);
   const text =
     item.$request_realm ||
     item.$request_container ||
@@ -379,37 +380,44 @@ export function returnImageType(item: IAtomicalItem): { type: string; content: s
     type = 'realm';
     tag = 'Realm';
     const content = tryDecodePunycode(text);
-    return { type, content, tag, buffer };
+    return { type, content, tag, contentType: 'Realm', buffer };
   } else {
-    if (findValueInDeepObject(item.mint_data?.fields, '$d') && findValueInDeepObject(item.mint_data?.fields, '$ct')) {
-      type = 'nft';
-      ct = findValueInDeepObject(item.mint_data?.fields, '$ct');
-      if (ct) {
-        if (ct.endsWith('webp')) {
-          ct = 'image/webp';
-        } else if (ct.endsWith('svg')) {
-          ct = 'image/svg+xml';
-        } else if (ct.endsWith('png')) {
-          ct = 'image/png';
-        } else if (ct.endsWith('jpg') || ct.endsWith('jpeg')) {
-          ct = 'image/jpeg';
-        } else if (ct.endsWith('gif')) {
-          ct = 'image/gif';
-        }
-        const data = findValueInDeepObject(item.mint_data?.fields, '$d');
-        const b64String = Buffer.from(data, 'hex').toString('base64');
-        content = `data:${ct};base64,${b64String}`;
-        tag = ct;
-        buffer = data ? Buffer.from(data, 'hex') : undefined;
-        return { type, content, tag, buffer };
+    type = 'nft';
+    const fields = item?.mint_data?.fields || {};
+    contentType = findValueInDeepObject(fields, '$ct') || '';
+    if (contentType) {
+      if (contentType.endsWith('webp')) {
+        contentType = 'image/webp';
+      } else if (contentType.endsWith('svg')) {
+        contentType = 'image/svg+xml';
+      } else if (contentType.endsWith('png')) {
+        contentType = 'image/png';
+      } else if (contentType.endsWith('jpg') || contentType.endsWith('jpeg')) {
+        contentType = 'image/jpeg';
+      } else if (contentType.endsWith('gif')) {
+        contentType = 'image/gif';
       }
     } else {
-      return { type: 'unknown', content: '', tag: 'unknown' };
+      for (const key of Object.keys(fields)) {
+        const lowerKey = key.toLowerCase();
+        if (lowerKey.endsWith('.png') || lowerKey.endsWith('.jpg') || lowerKey.endsWith('.jpeg') || lowerKey.endsWith('.gif') || lowerKey.endsWith('.webp')) {
+          const keys = lowerKey.split('.');
+          contentType = 'image/' + keys[keys.length - 1];
+          break;
+        } else if (lowerKey.endsWith('.svg')) {
+          contentType = 'image/svg+xml';
+          break;
+        }
+      }
     }
+    const mediaType = contentType.includes('/') ? contentType.split('/')[1].toUpperCase() : contentType;
+    const data = findValueInDeepObject(fields, '$d');
+    const buffer = data ? Buffer.from(data, 'hex') : undefined;
+    const b64String = data ? Buffer.from(data, 'hex').toString('base64') : undefined;
+    content = `data:${contentType};base64,${b64String}`;
+    return { type, tag: mediaType, contentType , content: data ? content: '', buffer };
   }
-  return { type, content, tag, buffer };
 }
-
 
 
 export function calcFee({ inputs, outputs, feeRate, addressType, network, autoFinalized }: CalcFeeOptions) {

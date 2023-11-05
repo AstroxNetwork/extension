@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { ADDRESS_TYPES, ATOM_NETWORK_TYPES, DISCORD_URL, GITHUB_URL, NETWORK_TYPES, TWITTER_URL } from '@/shared/constant';
+import { ADDRESS_TYPES, ATOM_NETWORK_TYPES, GITHUB_URL, NETWORK_TYPES } from '@/shared/constant';
 import { Card, Column, Content, Footer, Header, Layout, Row, Text } from '@/ui/components';
 import { Button } from '@/ui/components/Button';
 import { Icon } from '@/ui/components/Icon';
@@ -211,7 +211,7 @@ export default function SettingsTabScreen() {
             })}
           </div>
           <Row justifyCenter gap="xl" mt="lg">
-            <Icon
+            {/* <Icon
               icon="discord"
               size={fontSizes.iconMiddle}
               color="textDim"
@@ -227,7 +227,7 @@ export default function SettingsTabScreen() {
               onClick={() => {
                 window.open(TWITTER_URL);
               }}
-            />
+            /> */}
 
             <Icon
               icon="github"

@@ -25,7 +25,7 @@ export enum AtomNetworkType {
   WIZZ = 'https://ep.atomicalswallet.com/proxy',
   ATOMICALS = 'https://ep.atomicals.xyz/proxy',
   ATOMICALS_MARKET = 'https://ep.atomicalmarket.com/proxy',
-  WIZZ_TEST = '',
+  WIZZ_TEST = 'https://eptest.atomicalswallet.com/proxy',
   ATOMICALS_TEST = 'https://eptestnet.atomicals.xyz/proxy',
  }
 
