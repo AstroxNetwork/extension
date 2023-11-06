@@ -24,17 +24,21 @@ export default function ARC20NFTCard(props: ARC20NFTCardProps) {
     onClick
   } = props;
 
-  const { type, content, tag, buffer } = returnImageType(props.tokenBalance);
+  const { type, content, tag, contentType, buffer } = returnImageType(props.tokenBalance);
 
   const Content = () => {
-    if (tag.includes('stream') || !buffer) return null;
-    if (tag.startsWith('image/')) {
-      return <img src={content}
-        style={{
-          height: 24,
-          maxWidth: 140,
-        }} />;
-    } else if (tag.startsWith('video/')) {
+    if (contentType.includes('stream') || !buffer) return null;
+    if (contentType.startsWith('image/')) {
+      return (
+        <img
+          src={content}
+          style={{
+            height: 24,
+            maxWidth: 140
+          }}
+        />
+      );
+    } else if (contentType.startsWith('video/')) {
       return (
         <video
           src={content}
@@ -43,31 +47,42 @@ export default function ARC20NFTCard(props: ARC20NFTCardProps) {
           muted={true}
           controls={true}
           style={{
-            objectFit: 'cover'
+            objectFit: 'cover',
+            height: 24,
+            maxWidth: 140
           }}
           className="object-cover"
         />
       );
-    } else if (tag.startsWith('audio/')) {
+    } else if (contentType.startsWith('audio/')) {
       return <audio src={content} autoPlay={false} loop={true} controls={true} />;
     } else if (
-      tag.startsWith('font/') ||
-      tag.includes('/html') ||
-      tag.includes('/javascript') ||
-      tag.includes('/css') ||
-      tag.includes('/pdf')
+      contentType.startsWith('font/') ||
+      contentType.includes('/html') ||
+      contentType.includes('/javascript') ||
+      contentType.includes('/css') ||
+      contentType.includes('/pdf')
     ) {
       return (
         <iframe
           src={content}
+          style={{
+            height: 24,
+            maxWidth: 140,
+          }}
           className="object-contain w-full h-full primary-text pointer-events-none"
           frameBorder="none"
         />
       );
-    } else if (tag.startsWith('text/')) {
+    } else if (contentType.startsWith('text/')) {
       if (buffer) {
         return (
-          <div className="text-md break-all p-1 flex flex-wrap justify-center items-center aspect-square overflow-hidden leading-none">
+          <div
+            style={{
+              height: 24,
+              maxWidth: 140
+            }}
+            className="text-md break-all p-1 flex flex-wrap justify-center items-center aspect-square overflow-hidden leading-none">
             {buffer && new TextDecoder().decode(new Uint8Array(buffer))}
           </div>
         );
@@ -78,6 +93,10 @@ export default function ARC20NFTCard(props: ARC20NFTCardProps) {
     return (
       <iframe
         src={content}
+        style={{
+          height: 24,
+          maxWidth: 140
+        }}
         className="object-contain w-full h-full primary-text pointer-events-none"
         frameBorder="none"
       />
@@ -107,15 +126,20 @@ export default function ARC20NFTCard(props: ARC20NFTCardProps) {
             {type === 'unknown' ? (
               <Text text={'unknown'} />
             ) : type === 'nft' ? (
-                <Tag preset="default" text={tag} style={{
+              <Tag
+                preset="default"
+                text={tag}
+                style={{
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   maxWidth: 120,
+                  fontSize: 10,
                   display: 'inline-block',
                   textOverflow: 'ellipsis'
-                }}/>
+                }}
+              />
             ) : (
-              <Tag preset="success" text={'Realm'} />
+              <Tag style={{fontSize: 10}} preset="success" text={'Realm'} />
             )}
           </div>
           <Row justifyCenter>
