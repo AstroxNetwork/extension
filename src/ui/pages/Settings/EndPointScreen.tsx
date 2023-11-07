@@ -14,7 +14,7 @@ export default function EndPointScreen() {
         onBack={() => {
           window.history.go(-1);
         }}
-        title="Switch Network"
+        title="Switch EndPoint"
       />
       <Content>
         <Column>

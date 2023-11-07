@@ -147,7 +147,7 @@ export default function TxCreateScreen() {
           <Row justifyBetween>
             <Text text="Balance" color="textDim" />
             {showSafeBalance ? (
-              <Text text={`${accountBalance.amount} BTC`} preset="bold" size="sm" />
+              <Text text={`${accountBalance.amount || '--'} BTC`} preset="bold" size="sm" />
             ) : (
               <Row
                 onClick={() => {
@@ -159,7 +159,7 @@ export default function TxCreateScreen() {
                   preset="sub"
                   style={{ color: autoAdjust ? colors.yellow_light : colors.white_muted }}
                 />
-                <Text text={`${accountBalance.amount} BTC`} preset="bold" size="sm" />
+                <Text text={`${accountBalance.amount || '--'} BTC`} preset="bold" size="sm" />
               </Row>
             )}
           </Row>
@@ -173,7 +173,7 @@ export default function TxCreateScreen() {
                   setAutoAdjust(true);
                 }}>
                 <Text text={'MAX'} color={autoAdjust ? 'yellow' : 'textDim'} size="sm" />
-                <Text text={`${accountBalance.btc_amount} BTC`} preset="bold" size="sm" />
+                <Text text={`${accountBalance.btc_amount || '--'} BTC`} preset="bold" size="sm" />
               </Row>
             </Row>
           )}

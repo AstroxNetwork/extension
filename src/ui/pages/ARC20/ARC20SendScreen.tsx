@@ -273,7 +273,7 @@ function Step1({
           <Row justifyBetween>
             <Text text={'Available (safe for fee)'} color="textDim" />
             <Text
-              text={ `${accountBalance.btc_amount} BTC`}
+              text={ `${accountBalance.btc_amount || '--'} BTC`}
               preset="bold"
               size="sm"
             />

@@ -141,15 +141,15 @@ export default function WalletTabScreen() {
               <span>
                 <Row justifyBetween>
                   <span>{'BTC Balance'}</span>
-                  <span>{` ${accountBalance.btc_amount} BTC`}</span>
+                  <span>{` ${accountBalance.btc_amount || '--'} BTC`}</span>
                 </Row>
                 <Row justifyBetween>
                   <span>{'Atomicals Balance'}</span>
-                  <span>{` ${accountBalance.atomical_amount} BTC`}</span>
+                  <span>{` ${accountBalance.atomical_amount || '--'} BTC`}</span>
                 </Row>
                 <Row justifyBetween>
                   <span>{'Inscription Balance'}</span>
-                  <span>{` ${accountBalance.inscription_amount} BTC`}</span>
+                  <span>{` ${accountBalance.inscription_amount || '--'} BTC`}</span>
                 </Row>
               </span>
             }
