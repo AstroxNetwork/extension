@@ -1,5 +1,5 @@
 import { CHAINS_ENUM } from './constant';
-import { UTXO as UTXOAtom } from '../background/service/interfaces/api';
+import { IAtomicalItem, UTXO as UTXOAtom } from '../background/service/interfaces/api';
 
 
 export enum LOCAL_KEY {
@@ -273,6 +273,8 @@ export interface DecodedPsbt {
     address: string;
     value: number;
     inscriptions: Inscription[];
+    atomicals: string[]
+    atomicalItems: IAtomicalItem[]
     sighashType: number;
   }[];
   outputInfos: {

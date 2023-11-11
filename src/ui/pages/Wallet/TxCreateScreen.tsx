@@ -98,10 +98,10 @@ export default function TxCreateScreen() {
 
     createBitcoinTx(toInfo, toSatoshis, feeRate, autoAdjust)
       .then((data) => {
-        // if (data.fee < data.estimateFee) {
-        //   setError(`Network fee must be at leat ${data.estimateFee}`);
-        //   return;
-        // }
+        if(data.err) {
+          setError(data.err);
+          return
+        }
         console.log('then', data);
         setRawTxInfo(data);
         setDisabled(false);
@@ -110,8 +110,9 @@ export default function TxCreateScreen() {
         console.log('catch', e);
         setAutoAdjust(false)
         setError(e.message);
+        setDisabled(true)
       });
-  }, [toInfo, inputAmount, autoAdjust, feeRate]);
+  }, [toInfo, toSatoshis, inputAmount, autoAdjust, feeRate]);
 
   const showSafeBalance = useMemo(() => {
     return true;

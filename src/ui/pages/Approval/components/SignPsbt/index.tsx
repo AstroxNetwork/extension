@@ -10,12 +10,14 @@ import InscriptionPreview from '@/ui/components/InscriptionPreview';
 import { TabBar } from '@/ui/components/TabBar';
 import { WarningPopver } from '@/ui/components/WarningPopver';
 import WebsiteBar from '@/ui/components/WebsiteBar';
-import { useAccountAddress, useCurrentAccount } from '@/ui/state/accounts/hooks';
+import { useAccountAddress, useAtomicals, useCurrentAccount } from '@/ui/state/accounts/hooks';
 import { useCreateBitcoinTxCallback, useCreateMultiOrdinalsTxCallback } from '@/ui/state/transactions/hooks';
 import { colors } from '@/ui/theme/colors';
 import { fontSizes } from '@/ui/theme/font';
 import { copyToClipboard, satoshisToAmount, useApproval, useWallet } from '@/ui/utils';
 import { LoadingOutlined } from '@ant-design/icons';
+import AtomicalPreview from '@/ui/components/AtomicalPreview';
+import { IAtomicalItem } from '@/background/service/interfaces/api';
 
 interface Props {
   header?: React.ReactNode;
@@ -257,6 +259,7 @@ interface TxInfo {
   txError: string;
   decodedPsbt: DecodedPsbt;
   isScammer: boolean;
+  atomicalFTvalide?: boolean;
 }
 
 const initTxInfo: TxInfo = {
@@ -301,6 +304,7 @@ export default function SignPsbt({
 
   const address = useAccountAddress();
   const currentAccount = useCurrentAccount();
+  const atomicals = useAtomicals();
 
   const [isWarningVisible, setIsWarningVisible] = useState(false);
   const init = async () => {
@@ -364,23 +368,63 @@ export default function SignPsbt({
       }
     }
 
+    const inputInfosAndAtoms = decodedPsbt.inputInfos.map(utxo => {
+      console.log(atomicals.atomicalsUTXOs)
+      const atomUtxo = atomicals.atomicalsUTXOs.find(o => o.txid === utxo.txid && o.vout === utxo.vout)
+      console.log(atomUtxo);
+      const atomicalItems = atomUtxo ? atomUtxo?.atomicals?.map(id => {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        //@ts-ignore
+        const atomical = [...atomicals.atomicalFTs, ...atomicals.atomicalNFTs].find(o => o.atomical_id === id)
+        return atomical as IAtomicalItem
+      }) : []
+      return {
+        ...utxo,
+        ...atomUtxo,
+        atomicalItems: atomicalItems || []
+      }
+    })
+    console.log('inputInfosAndAtoms', inputInfosAndAtoms);
+    const isFTSign = inputInfosAndAtoms.some(o => o.atomicalItems.some(o => o.type === 'FT'));
+    let atomicalFTvalide = true;
+    if(isFTSign) {
+      try {
+        const validate = await wallet.validateAtomical(txInfo.psbtHex);
+        if (validate) {
+          atomicalFTvalide = true;
+        } else {
+          tools.toastWarning('The transaction failed to pass protocol validation.')
+          atomicalFTvalide =  false
+        }
+      } catch (err) {
+        tools.toastWarning('Please switch to the Atomicals endpoint.')
+        atomicalFTvalide =  false
+      }
+    }
     setTxInfo({
-      decodedPsbt,
+      decodedPsbt: {
+        ...decodedPsbt,
+        inputInfos: inputInfosAndAtoms
+      },
       changedBalance: 0,
       changedInscriptions: [],
       psbtHex,
       rawtx: '',
       toSignInputs,
       txError,
-      isScammer
+      isScammer,
+      atomicalFTvalide
     });
 
     setLoading(false);
   };
 
   useEffect(() => {
-    init();
-  }, []);
+    if(atomicals.address) {
+      init();
+    }
+  }, [atomicals.address]);
+
 
   if (!handleCancel) {
     handleCancel = () => {
@@ -409,15 +453,27 @@ export default function SignPsbt({
     return true;
   }, [txInfo.psbtHex]);
 
-  const isValid = useMemo(() => {
+  const isValided = useMemo(() => {
     if (txInfo.toSignInputs.length == 0) {
       return false;
     }
     if (txInfo.decodedPsbt.inputInfos.length == 0) {
       return false;
     }
+    console.log('isValid', txInfo.decodedPsbt)
+    console.log('isValid', atomicals)
+    if (!txInfo.decodedPsbt.inputInfos.every((v) => {
+      const confrim = atomicals.confirmedUTXOs.find(o => o.txid === v.txid && o.vout === v.vout)
+      return confrim
+    })) {
+      tools.toastWarning('The inputs include unconfirmed UTXOs.')
+      return false;
+    }
+    if(!txInfo.atomicalFTvalide) {
+      return false;
+    }
     return true;
-  }, [txInfo.decodedPsbt, txInfo.toSignInputs]);
+  }, [txInfo.decodedPsbt, txInfo.toSignInputs, atomicals]);
 
   const sendingInscriptions = useMemo(() => {
     return txInfo.decodedPsbt.inputInfos
@@ -509,6 +565,7 @@ export default function SignPsbt({
                     {txInfo.decodedPsbt.inputInfos.map((v, index) => {
                       const isToSign = txInfo.toSignInputs.find((v) => v.index === index) ? true : false;
                       const inscriptions = v.inscriptions;
+                      const atomicalItems = v.atomicalItems;
                       return (
                         <Row
                           key={'output_' + index}
@@ -553,6 +610,30 @@ export default function SignPsbt({
                                   </Row>
                                 </Column>
                               )}
+                            </Row>
+                            <Row>
+                              {
+                                atomicalItems.length > 0 && (
+                                  <Column justifyCenter>
+                                    <Text
+                                      text={`Atomicals (${atomicalItems.length})`}
+                                      color={isToSign ? 'white' : 'textDim'}
+                                    />
+                                    <Row overflowX gap="lg" style={{ width: 280 }} pb="lg">
+                                      {atomicalItems.map((v) => (
+                                        <AtomicalPreview
+                                          key={v.atomical_id}
+                                          data={v}
+                                          preset="small"
+                                          // onClick={() => {
+                                          //   window.open(v.preview);
+                                          // }}
+                                        />
+                                      ))}
+                                    </Row>
+                                  </Column>
+                                )
+                              }
                             </Row>
                           </Column>
                         </Row>
@@ -676,7 +757,7 @@ export default function SignPsbt({
             preset="primary"
             text={type == TxType.SIGN_TX ? 'Sign' : 'Sign & Pay'}
             onClick={handleConfirm}
-            disabled={isValid == false || disabledInscriptions}
+            disabled={isValided == false || disabledInscriptions}
             full
           />
         </Row>
