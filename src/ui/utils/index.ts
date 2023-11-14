@@ -367,7 +367,6 @@ export function tryDecodePunycode(name: string) {
 
 export function returnImageType(item: IAtomicalItem): { type: string; content: string; tag: string; contentType: string; buffer?: Buffer } {
   let contentType, content, type, tag, buffer;
-  console.log(item);
   const text =
     item.$request_realm ||
     item.$request_container ||

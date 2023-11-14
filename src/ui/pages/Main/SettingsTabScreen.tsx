@@ -138,7 +138,7 @@ export default function SettingsTabScreen() {
     }
 
     if (v.action == 'changeEndPoint') {
-      v.value = ATOM_NETWORK_TYPES.find(o => o.value === atomNetworkType)?.label;
+      v.value = ATOM_NETWORK_TYPES.find(o => o.value === atomNetworkType)?.label || 'Custom';
     }
 
     if (v.action == 'addressType') {

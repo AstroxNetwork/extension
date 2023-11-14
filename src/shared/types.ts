@@ -27,6 +27,7 @@ export enum AtomNetworkType {
   ATOMICALS_MARKET = 'https://ep.atomicalmarket.com/proxy',
   WIZZ_TEST = 'https://eptest.atomicalswallet.com/proxy',
   ATOMICALS_TEST = 'https://eptestnet.atomicals.xyz/proxy',
+  NEXT_DAO = 'https://ep.nextdao.xyz/proxy',
  }
 
 export enum RestoreWalletType {

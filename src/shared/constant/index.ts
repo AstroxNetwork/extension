@@ -231,6 +231,7 @@ export const ATOM_NETWORK_TYPES = [
   { value: AtomNetworkType.ATOMICALS, label: 'EndPoint 1', name: 'livenet', validNames: [0, 'livenet', 'mainnet'] },
   { value: AtomNetworkType.WIZZ, label: 'EndPoint 2', name: 'livenet',  validNames: [0, 'livenet', 'mainnet'] },
   { value: AtomNetworkType.ATOMICALS_MARKET, label: 'EndPoint 3', name: 'livenet', validNames: [0,'livenet', 'mainnet'] },
+  { value: AtomNetworkType.NEXT_DAO, label: 'EndPoint 4', name: 'livenet', validNames: [0,'livenet', 'mainnet'] },
   { value: AtomNetworkType.ATOMICALS_TEST, label: 'EndPoint 1', name: 'testnet', validNames: [1,'testnet'] },
   { value: AtomNetworkType.WIZZ_TEST, label: 'EndPoint 2', name: 'testnet', validNames: [1,'testnet'] },
 ];

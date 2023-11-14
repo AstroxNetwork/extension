@@ -54,6 +54,12 @@ export function useAtomNetworkType() {
   return accountsState.atomNetworkType;
 }
 
+
+export function useAtomicalCustomEndPoint() {
+  const accountsState = useSettingsState();
+  return accountsState.atomCustomEndPoint;
+}
+
 export function useChangeNetworkTypeCallback() {
   const dispatch = useAppDispatch();
   const wallet = useWallet();
@@ -85,6 +91,27 @@ export function useChangeAtomNetworkTypeCallback() {
       );
     },
     [dispatch]
+  );
+}
+
+export function useChangeAtomCustomEndPointCallback() {
+  const dispatch = useAppDispatch();
+  const wallet = useWallet();
+  const networkType = useNetworkType();
+  return useCallback(
+    async (type: AtomNetworkType) => {
+      await wallet.setAtomicalCustomEndPoint(networkType, type)
+      dispatch(accountActions.expireBalance());
+      console.log( 'updateSettings', type)
+      await wallet.setAtomicalEndPoint(type)
+      dispatch(
+        settingsActions.updateSettings({
+          atomNetworkType: type,
+          atomCustomEndPoint: type
+        })
+      );
+    },
+    [dispatch, networkType]
   );
 }
 

@@ -8,6 +8,7 @@ export interface SettingsState {
   addressType: AddressType;
   networkType: NetworkType;
   atomNetworkType: AtomNetworkType;
+  atomCustomEndPoint: string | AtomNetworkType;
   walletConfig: WalletConfig;
   skippedVersion: string;
 }
@@ -17,6 +18,7 @@ export const initialState: SettingsState = {
   addressType: AddressType.P2TR,
   networkType: NetworkType.MAINNET,
   atomNetworkType: AtomNetworkType.ATOMICALS,
+  atomCustomEndPoint: '',
   walletConfig: {
     version: '',
     moonPayEnabled: true,
@@ -40,6 +42,7 @@ const slice = createSlice({
           addressType?: AddressType;
           networkType?: NetworkType;
           atomNetworkType?: AtomNetworkType;
+          atomCustomEndPoint?: string;
           walletConfig?: WalletConfig;
           skippedVersion?: string;
         };

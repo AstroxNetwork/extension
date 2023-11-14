@@ -43,6 +43,9 @@ export interface PreferenceStore {
   addressType: AddressType;
   networkType: NetworkType;
   atomicalEndPoint: string;
+  customEndPoint: {
+    [key: string]: string;
+  };
   keyringAlianNames: {
     [key: string]: string;
   };
@@ -116,6 +119,10 @@ class PreferenceService {
         addressType: AddressType.M44_P2TR,
         networkType: NetworkType.MAINNET,
         atomicalEndPoint: ELECTRUMX_HTTP_PROXY,
+        customEndPoint: {
+          [NetworkType.MAINNET]: '',
+          [NetworkType.TESTNET]: '',
+        },
         keyringAlianNames: {},
         accountAlianNames: {},
         uiCachedData: {},
@@ -162,6 +169,11 @@ class PreferenceService {
     if (!this.store.networkType) {
       this.store.networkType = NetworkType.MAINNET;
     }
+
+    if (!this.store.customEndPoint) {
+      this.store.customEndPoint = {};
+    }
+
 
     if(!this.store.atomicalEndPoint) {
       this.store.atomicalEndPoint = ELECTRUMX_HTTP_PROXY;
@@ -356,9 +368,17 @@ class PreferenceService {
   };
 
   setAtomicalEndPoint = (host: string) => {
-    console.log('setAtomicalEndPoint', host, this)
     this.store.atomicalEndPoint = host;
   };
+
+  getAtomicalCustomeEndPoint = (networkType: NetworkType) => {
+    console.log('getAtomicalCustomeEndPoint', this.store.customEndPoint)
+    return this.store.customEndPoint[networkType] || '';
+  }
+
+  setAtomicalCustomeEndPoint = (networkType: NetworkType, host: string) => {
+    this.store.customEndPoint[networkType] = host;
+  }
 
   // currentKeyringIndex
   getCurrentKeyringIndex = () => {

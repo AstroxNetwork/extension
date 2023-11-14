@@ -51,7 +51,13 @@ import { signBip322MessageSimple } from '../utils/bip322';
 import { publicKeyToAddress, toPsbtNetwork } from '../utils/tx-utils';
 import BaseController from './base';
 import { AtomicalService } from '../service/atomical';
-import { IAtomicalItem, IMergedAtomicals, IWalletBalance, UTXO as AtomUtxo, IAtomicalBalanceItem } from '../service/interfaces/api';
+import {
+  IAtomicalItem,
+  IMergedAtomicals,
+  IWalletBalance,
+  UTXO as AtomUtxo,
+  IAtomicalBalanceItem
+} from '../service/interfaces/api';
 import { MempoolService, mempoolService, mempoolServiceTest } from '../service/mempool';
 import { detectAddressTypeToScripthash } from '../service/utils';
 import { ElectrumApi } from '../service/eletrum';
@@ -727,6 +733,15 @@ export class WalletController extends BaseController {
 
   setAtomicalEndPoint = (host: string) => {
     preferenceService.setAtomicalEndPoint(host);
+  };
+
+  getAtomicalCustomEndPoint = (networkType: NetworkType) => {
+    const endPointHost = preferenceService.getAtomicalCustomeEndPoint(networkType);
+    return endPointHost;
+  };
+
+  setAtomicalCustomEndPoint = (networkType: NetworkType, host: string) => {
+    preferenceService.setAtomicalCustomeEndPoint(networkType, host);
   };
 
   // sendBTC = async ({
@@ -1407,7 +1422,7 @@ export class WalletController extends BaseController {
       const item = {
         ...data,
         value: atomical.confirmed,
-        confirmed: !unconfirmedAtomicalIds.has(atomical.atomical_id),
+        confirmed: !unconfirmedAtomicalIds.has(atomical.atomical_id)
       };
       const find = mergedUTXOs.find((e) => e.atomicals?.includes(atomical.atomical_id));
       if (find) {
@@ -1418,7 +1433,7 @@ export class WalletController extends BaseController {
           atomicalMerged.push({
             ...find,
             atomicals: [item],
-            hasOrdinals: atomicalsWithOrdinalsUTXOs.some((e) => e.txid == find.txid && e.vout == find.vout),
+            hasOrdinals: atomicalsWithOrdinalsUTXOs.some((e) => e.txid == find.txid && e.vout == find.vout)
           });
         }
       } else if (atomical.type === 'FT') {
@@ -1433,7 +1448,7 @@ export class WalletController extends BaseController {
               ...item,
               confirmed: true,
               utxos: utxos,
-              value: utxos.reduce((a, b) => a + b.value, 0),
+              value: utxos.reduce((a, b) => a + b.value, 0)
             });
           }
         }
@@ -1460,7 +1475,7 @@ export class WalletController extends BaseController {
       unconfirmedUTXOs,
       unconfirmedValue,
       atomicalsWithOrdinalsUTXOs,
-      atomicalsWithOrdinalsValue,
+      atomicalsWithOrdinalsValue
     };
 
     return balance;

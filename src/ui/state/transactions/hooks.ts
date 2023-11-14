@@ -53,16 +53,15 @@ export function buildTx({
   autoFinalized
 }: BuildTxOptions): TxResult {
   const newInputs = [...inputs];
-  const addressType = getAddressType(address);
+  const addressType = getAddressType(address)!;
   let value = 0;
-  for (const utxo of balances) {
-    const remainder = value - amount;
+  const checkRemainder = (remainder: number) => {
     if (remainder >= 0) {
       const newOutputs = [...outputs];
       if (remainder >= DUST_AMOUNT) {
         newOutputs.push({
           address: address,
-          value: remainder
+          value: remainder,
         });
       }
       const retFee = calcFee({
@@ -71,7 +70,7 @@ export function buildTx({
         feeRate,
         addressType,
         network,
-        autoFinalized
+        autoFinalized,
       });
       const v = remainder - retFee;
       if (v >= 0) {
@@ -84,14 +83,11 @@ export function buildTx({
               network,
               address,
               addressType,
-              outputs: [
-                ...outputs,
-                {
-                  address: address,
-                  value: v
-                }
-              ]
-            }
+              outputs: [...outputs, {
+                address: address,
+                value: v,
+              }],
+            },
           };
         } else {
           return {
@@ -102,17 +98,27 @@ export function buildTx({
               addressType,
               fee: retFee + v,
               inputs: newInputs,
-              outputs: outputs
-            }
+              outputs: outputs,
+            },
           };
         }
       }
     }
+  };
+  let v = checkRemainder(value - amount);
+  if (v) {
+    return v;
+  }
+  for (const utxo of balances) {
     value += utxo.value;
     newInputs.push(utxo);
+    v = checkRemainder(value - amount);
+    if (v) {
+      return v;
+    }
   }
   return {
-    error: 'Insufficient balance'
+    error: 'Insufficient balance',
   };
 }
 
@@ -180,9 +186,37 @@ export function useCreateBitcoinTxCallback() {
         const summary = await wallet.getFeeSummary();
         feeRate = summary.list[1].feeRate;
       }
+
+      // const txResult = buildTx({
+      //   inputs: [],
+      //   outputs: [
+      //     {
+      //       address: toAddressInfo.address,
+      //       value: toAmount
+      //     }
+      //   ],
+      //   feeRate: feeRate,
+      //   address: fromAddress,
+      //   network: networkType,
+      //   balances: regularsUTXOs,
+      //   amount: toAmount
+      // });
+      // if (txResult.error) {
+      //   return {
+      //     psbtHex: '',
+      //     rawtx: '',
+      //     toAddressInfo,
+      //     err: txResult.error
+      //   };
+      // }
+      // const psbt = toPsbt({
+      //   tx: txResult.ok as TxOk,
+      //   pubkey: account.pubkey
+      // });
       let inputValue = 0;
       let inputUtxos: UTXO[] = [];
       let fee;
+      console.time('calcFee');
       const outputUtxos: { address: string; value: number }[] = [];
       outputUtxos.push({
         address: toAddressInfo.address,
@@ -222,6 +256,7 @@ export function useCreateBitcoinTxCallback() {
           }
         }
       }
+      console.timeEnd('calcFee');
       const psbt = new Psbt({ network: toPsbtNetwork(networkType) });
       // const psbt = new Psbt({ network: bitcoin.networks.bitcoin });
       if (autoAdjust) {
@@ -230,6 +265,7 @@ export function useCreateBitcoinTxCallback() {
           value: toAmount - fee
         });
       } else {
+        console.log('11111')
         if (v < 0) {
           return {
             psbtHex: '',
@@ -278,14 +314,16 @@ export function useCreateBitcoinTxCallback() {
           rawtx,
           psbtHex,
           fromAddress,
-          feeRate: fee
+          // feeRate: (txResult.ok as TxOk).feeRate,
+          fee,
         })
       );
       const rawTxInfo: RawTxInfo = {
         psbtHex,
         rawtx,
         toAddressInfo,
-        fee
+        fee,
+        // fee: (txResult.ok as TxOk).feeRate
       };
       return rawTxInfo;
     },
@@ -337,31 +375,13 @@ export function useCreateARC20TxCallback() {
 
       const signPsbt = Psbt.fromHex(s);
       const tx = signPsbt.extractTransaction();
-      try {
-        const validate = await wallet.validateAtomical(tx.toHex());
-        if (validate) {
-          const rawTxInfo: RawTxInfo = {
-            psbtHex,
-            rawtx: tx.toHex(),
-            toAddressInfo,
-            fee: (txResult.ok as TxOk).fee
-          };
-          return rawTxInfo;
-        } else {
-          return {
-            psbtHex: '',
-            rawtx: '',
-            toAddressInfo,
-            err: validate.message
-          };
-        }
-      } catch (err) {
-        return {
-          psbtHex: '',
-          rawtx: '',
-          err: 'Please switch to the Atomicals endpoint.'
-        };
-      }
+      const rawTxInfo: RawTxInfo = {
+        psbtHex,
+        rawtx: tx.toHex(),
+        toAddressInfo,
+        fee: (txResult.ok as TxOk).fee
+      };
+      return rawTxInfo;
     },
     [dispatch, wallet, account, fromAddress, atomicals, networkType]
   );
@@ -409,7 +429,6 @@ export function useCreateARCNFTTxCallback() {
 
       const signPsbt = Psbt.fromHex(s);
       const tx = signPsbt.extractTransaction();
-
       const rawTxInfo: RawTxInfo = {
         psbtHex,
         rawtx: tx.toHex(),

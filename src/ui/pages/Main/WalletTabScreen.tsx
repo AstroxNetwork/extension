@@ -420,14 +420,12 @@ function ARC20List({ tabKey }: { tabKey: WalletTabScreenTabKey }) {
   const navigate = useNavigate();
   const wallet = useWallet();
   const currentAccount = useCurrentAccount();
-
   // const [tokens, setTokens] = useState<TokenBalance[]>([]);
   const [total, setTotal] = useState(-1);
   const [pagination, setPagination] = useState({ currentPage: 1, pageSize: 100 });
   // const [balanceMap, setBalanceMap] = useState<IAtomicalBalances | undefined>(undefined);
   const atomicals = useAtomicals();
 
-  const tools = useTools();
   // const fetchData = async () => {
   //   try {
   //     // tools.showLoading(true);
@@ -551,7 +549,7 @@ function ARC20List({ tabKey }: { tabKey: WalletTabScreenTabKey }) {
         )}
       </Row>
 
-      <Row justifyCenter mt="lg">
+      {/* <Row justifyCenter mt="lg">
         <Pagination
           pagination={pagination}
           total={total}
@@ -559,7 +557,7 @@ function ARC20List({ tabKey }: { tabKey: WalletTabScreenTabKey }) {
             setPagination(pagination);
           }}
         />
-      </Row>
+      </Row> */}
     </Column>
   );
 }

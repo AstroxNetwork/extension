@@ -18,6 +18,7 @@ import { copyToClipboard, satoshisToAmount, useApproval, useWallet } from '@/ui/
 import { LoadingOutlined } from '@ant-design/icons';
 import AtomicalPreview from '@/ui/components/AtomicalPreview';
 import { IAtomicalItem } from '@/background/service/interfaces/api';
+import { Psbt } from 'bitcoinjs-lib';
 
 interface Props {
   header?: React.ReactNode;
@@ -305,6 +306,8 @@ export default function SignPsbt({
   const address = useAccountAddress();
   const currentAccount = useCurrentAccount();
   const atomicals = useAtomicals();
+  const [warning, setWarning] = useState('');
+  const [warningVisible, setWarningVisible] = useState(false);
 
   const [isWarningVisible, setIsWarningVisible] = useState(false);
   const init = async () => {
@@ -385,19 +388,24 @@ export default function SignPsbt({
       }
     })
     console.log('inputInfosAndAtoms', inputInfosAndAtoms);
-    const isFTSign = inputInfosAndAtoms.some(o => o.atomicalItems.some(o => o.type === 'FT'));
+    const withAtomical = inputInfosAndAtoms.some(o => o.atomicalItems.length > 0);
     let atomicalFTvalide = true;
-    if(isFTSign) {
+    if(withAtomical) {
       try {
-        const validate = await wallet.validateAtomical(txInfo.psbtHex);
+        const s = await wallet.signPsbtReturnHex(psbtHex, { autoFinalized: true });
+        const signPsbt = Psbt.fromHex(s);
+        const tx = signPsbt.extractTransaction();
+        const validate = await wallet.validateAtomical(tx.toHex());
         if (validate) {
           atomicalFTvalide = true;
         } else {
-          tools.toastWarning('The transaction failed to pass protocol validation.')
+          setWarningVisible(true);
+          setWarning('The transaction failed to pass protocol validation.');
           atomicalFTvalide =  false
         }
       } catch (err) {
-        tools.toastWarning('Please switch to the Atomicals endpoint.')
+        setWarningVisible(true);
+        setWarning('Please switch to the Atomicals endpoint.');
         atomicalFTvalide =  false
       }
     }
@@ -466,7 +474,8 @@ export default function SignPsbt({
       const confrim = atomicals.confirmedUTXOs.find(o => o.txid === v.txid && o.vout === v.vout)
       return confrim
     })) {
-      tools.toastWarning('The inputs include unconfirmed UTXOs.')
+      setWarningVisible(true);
+      setWarning('The inputs include unconfirmed UTXOs.');
       return false;
     }
     if(!txInfo.atomicalFTvalide) {
@@ -502,6 +511,7 @@ export default function SignPsbt({
           <Icon size={fontSizes.xxxl} color="gold">
             <LoadingOutlined />
           </Icon>
+          <Text text="Checking UTXO..." color='gold'/>
         </Content>
       </Layout>
     );
@@ -770,6 +780,16 @@ export default function SignPsbt({
           }}
         />
       )}
+      {
+        warningVisible && (
+          <WarningPopver
+            text={warning}
+            onClose={() => {
+              setWarningVisible(false);
+            }}
+          />
+        )
+      }
     </Layout>
   );
 }
