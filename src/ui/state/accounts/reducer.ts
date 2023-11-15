@@ -8,7 +8,9 @@ export interface AccountsState {
   accounts: Account[];
   current: Account;
   loading: boolean;
-  atomicals: IWalletBalance;
+  atomicals: {
+    [key: string]: IWalletBalance
+  } | object;
   balanceMap: {
     [key: string]: {
       amount: string;
@@ -50,26 +52,7 @@ export const initialState: AccountsState = {
   accounts: [],
   current: initialAccount,
   loading: false,
-  atomicals: {
-    atomicalMerged: [],
-    atomicalNFTs: [],
-    scripthash: '',
-    output: '',
-    address: '',
-    atomicalsUTXOs: [],
-    atomicalsValue: undefined,
-    regularsUTXOs: [],
-    atomicalFTs: [],
-    ordinalsValue: 0,
-    confirmedUTXOs: [],
-    unconfirmedUTXOs: [],
-    ordinalsUTXOs: [],
-    atomicalsWithOrdinalsValue: 0,
-    confirmedValue: 0,
-    regularsValue: 0,
-    unconfirmedValue: 0,
-    atomicalsWithOrdinalsUTXOs: []
-  },
+  atomicals: {},
   balanceMap: {},
   historyMap: {},
   inscriptionsMap: {},
@@ -132,7 +115,7 @@ const slice = createSlice({
       }
     ) {
       const { payload } = action;
-      state.atomicals = payload;
+      state.atomicals[state.current.address] = payload;
     },
 
     expireBalance(state) {

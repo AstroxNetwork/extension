@@ -44,6 +44,7 @@ import ARC20NFTScreen from './ARC20/ARC20NFTScreen';
 import ARC20TxConfirmScreen from './ARC20/ARC20TxConfrimScreen';
 import EndPointScreen from './Settings/EndPointScreen';
 import TxCreateScreen from './Wallet/TxCreateScreen';
+import { useAccountAddress } from '../state/accounts/hooks';
 
 const routes = {
   BoostScreen: {
@@ -248,7 +249,7 @@ export function useNavigate() {
 const Main = () => {
   const wallet = useWallet();
   const dispatch = useAppDispatch();
-
+  const address = useAccountAddress();
   const isReady = useIsReady();
   const isUnlocked = useIsUnlocked();
 
@@ -350,7 +351,7 @@ const Main = () => {
     );
   }
   return (
-    <HashRouter>
+    <HashRouter key={address}>
       <Routes>
         {Object.keys(routes)
           .map((v) => routes[v])

@@ -47,7 +47,8 @@ export function useAppSummary() {
 
 export function useAtomicals() {
   const accountsState = useAccountsState();
-  return accountsState.atomicals;
+  console.log('useAtomicals', accountsState.atomicals);
+  return accountsState.atomicals[accountsState.current.address];
 }
 
 export function useUnreadAppSummary() {
