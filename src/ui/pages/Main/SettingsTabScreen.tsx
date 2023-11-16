@@ -63,7 +63,7 @@ const SettingList: Setting[] = [
     right: true
   },
   {
-    label: 'Change Endpoint',
+    label: 'Switch Endpoint',
     value: AtomNetworkType.ATOMICALS,
     desc: '',
     action: 'changeEndPoint',

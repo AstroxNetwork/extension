@@ -487,7 +487,7 @@ function ARC20List({ tabKey }: { tabKey: WalletTabScreenTabKey }) {
             {atomicals.atomicalMerged.map((utxo, index) => {
               return (
                 <Column key={index} full>
-                  <Text text={`UTXO: ${utxo.txid?.slice(0, 6)}...${utxo.txid?.slice(-4)}:${utxo.index}`} color="textDim" />
+                  <Text text={`Location: ${utxo.txid?.slice(0, 6)}...${utxo.txid?.slice(-4)}:${utxo.index}`} color="textDim" />
                   <Row full>
                     <Text text={'Including:'} size="xs" color="textDim" />
                     <Text text={`${utxo.value.toLocaleString()}`} size="xs" />

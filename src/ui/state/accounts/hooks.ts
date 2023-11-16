@@ -8,6 +8,7 @@ import { useAppDispatch, useAppSelector } from '../hooks';
 import { useCurrentKeyring } from '../keyrings/hooks';
 import { accountActions } from './reducer';
 import { useNetworkType } from '../settings/hooks';
+import { IWalletBalance } from '@/background/service/interfaces/api';
 
 export function useAccountsState(): AppState['accounts'] {
   return useAppSelector((state) => state.accounts);
@@ -45,7 +46,7 @@ export function useAppSummary() {
   return accountsState.appSummary;
 }
 
-export function useAtomicals() {
+export function useAtomicals():IWalletBalance {
   const accountsState = useAccountsState();
   console.log('useAtomicals', accountsState.atomicals);
   return accountsState.atomicals[accountsState.current.address];

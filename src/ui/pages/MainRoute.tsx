@@ -351,7 +351,7 @@ const Main = () => {
     );
   }
   return (
-    <HashRouter key={address}>
+    <HashRouter>
       <Routes>
         {Object.keys(routes)
           .map((v) => routes[v])

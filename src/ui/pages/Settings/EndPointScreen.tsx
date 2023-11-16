@@ -35,7 +35,7 @@ export default function EndPointScreen() {
       setCustomEndPoint('');
       return setIsEdit(true);
     }
-    const isIndex = ATOM_NETWORK_TYPES.find((o) => o.value === customEndPoint);
+    const isIndex = ATOM_NETWORK_TYPES.filter(o=> o.validNames.includes(network)).find((o) => o.value === customEndPoint);
     if (isIndex) {
       await changeAtomNetworkType(isIndex.value);
       tools.toastSuccess('Endpoint changed');
@@ -67,7 +67,7 @@ export default function EndPointScreen() {
         onBack={() => {
           window.history.go(-1);
         }}
-        title="Switch EndPoint"
+        title="Switch Endpoint"
       />
       <Content>
         <Column>

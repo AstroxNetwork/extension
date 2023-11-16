@@ -69,7 +69,7 @@ function Step1({
   // const [rawTxInfo, setRawTxInfo] = useState<RawTxInfo>();
   const createARC20Tx = useCreateARC20TxCallback();
   const atomicals = useAtomicals();
-  const relatedAtomUtxos = atomicals.atomicalFTs.find((o) => o.$ticker === contextData.tokenBalance.$ticker)?.utxos || [];
+  const relatedAtomUtxos = atomicals.atomicalFTs?.find((o) => o.$ticker === contextData.tokenBalance.$ticker)?.utxos || [];
 
   useEffect(() => {
     setError('');

@@ -310,6 +310,7 @@ export default function SignPsbt({
   const [warningVisible, setWarningVisible] = useState(false);
 
   const [isWarningVisible, setIsWarningVisible] = useState(false);
+  const [checked, setChecked] = useState(false);
   const init = async () => {
     let txError = '';
     if (type === TxType.SEND_BITCOIN) {
@@ -400,15 +401,24 @@ export default function SignPsbt({
           atomicalFTvalide = true;
         } else {
           setWarningVisible(true);
-          setWarning('The transaction failed to pass protocol validation.');
+          setWarning('Security check failed, risking burn!! Proceed at  risk!');
           atomicalFTvalide =  false
         }
       } catch (err) {
         setWarningVisible(true);
-        setWarning('Please switch to the Atomicals endpoint.');
+        setWarning('Security check failed, risking burn!! Proceed at  risk!');
         atomicalFTvalide =  false
       }
     }
+    if (!(inputInfosAndAtoms.every((v) => {
+      const confrim = atomicals.confirmedUTXOs?.find(o => o.txid === v.txid && o.vout === v.vout)
+      return confrim
+    }))) {
+      setWarningVisible(true);
+      setWarning('Unconfirmed funds detected, risking burn!! Proceed at risk!');
+      atomicalFTvalide =  false
+    }
+    // atomicalFTvalide =  false
     setTxInfo({
       decodedPsbt: {
         ...decodedPsbt,
@@ -426,6 +436,11 @@ export default function SignPsbt({
 
     setLoading(false);
   };
+
+  // useEffect(() => {
+  //   setWarningVisible(true);
+  //   setWarning('Unconfirmed funds detected, risking burn!! Proceed at risk!');
+  // }, [])
 
   useEffect(() => {
     if(atomicals.address) {
@@ -461,6 +476,7 @@ export default function SignPsbt({
     return true;
   }, [txInfo.psbtHex]);
 
+
   const isValided = useMemo(() => {
     if (txInfo.toSignInputs.length == 0) {
       return false;
@@ -470,16 +486,9 @@ export default function SignPsbt({
     }
     console.log('isValid', txInfo.decodedPsbt)
     console.log('isValid', atomicals)
-    if (!txInfo.decodedPsbt.inputInfos.every((v) => {
-      const confrim = atomicals.confirmedUTXOs.find(o => o.txid === v.txid && o.vout === v.vout)
-      return confrim
-    })) {
-      setWarningVisible(true);
-      setWarning('The inputs include unconfirmed UTXOs.');
-      return false;
-    }
+
     if(!txInfo.atomicalFTvalide) {
-      return false;
+      return true;
     }
     return true;
   }, [txInfo.decodedPsbt, txInfo.toSignInputs, atomicals]);
@@ -765,9 +774,9 @@ export default function SignPsbt({
           <Button preset="default" text="Reject" onClick={handleCancel} full />
           <Button
             preset="primary"
-            text={type == TxType.SIGN_TX ? 'Sign' : 'Sign & Pay'}
+            text={(checked && txInfo.atomicalFTvalide == false) ? '⚠️Sign & Pay': type == TxType.SIGN_TX ? 'Sign' :  'Sign & Pay'}
             onClick={handleConfirm}
-            disabled={isValided == false || disabledInscriptions}
+            disabled={isValided == false || disabledInscriptions || (!checked && txInfo.atomicalFTvalide == false)}
             full
           />
         </Row>
@@ -784,6 +793,10 @@ export default function SignPsbt({
         warningVisible && (
           <WarningPopver
             text={warning}
+            checkText={'I accept the risk.'}
+            onChecked={(value) => {
+              setChecked(value);
+            }}
             onClose={() => {
               setWarningVisible(false);
             }}

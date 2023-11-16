@@ -228,12 +228,12 @@ export const NETWORK_TYPES = [
 ];
 
 export const ATOM_NETWORK_TYPES = [
-  { value: AtomNetworkType.ATOMICALS, label: 'EndPoint 1', name: 'livenet', validNames: [0, 'livenet', 'mainnet'] },
-  { value: AtomNetworkType.WIZZ, label: 'EndPoint 2', name: 'livenet',  validNames: [0, 'livenet', 'mainnet'] },
-  { value: AtomNetworkType.ATOMICALS_MARKET, label: 'EndPoint 3', name: 'livenet', validNames: [0,'livenet', 'mainnet'] },
-  { value: AtomNetworkType.NEXT_DAO, label: 'EndPoint 4', name: 'livenet', validNames: [0,'livenet', 'mainnet'] },
-  { value: AtomNetworkType.ATOMICALS_TEST, label: 'EndPoint 1', name: 'testnet', validNames: [1,'testnet'] },
-  { value: AtomNetworkType.WIZZ_TEST, label: 'EndPoint 2', name: 'testnet', validNames: [1,'testnet'] },
+  { value: AtomNetworkType.ATOMICALS, label: 'Endpoint 1', name: 'livenet', validNames: [0, 'livenet', 'mainnet'] },
+  { value: AtomNetworkType.WIZZ, label: 'Endpoint 2', name: 'livenet',  validNames: [0, 'livenet', 'mainnet'] },
+  { value: AtomNetworkType.ATOMICALS_MARKET, label: 'Endpoint 3', name: 'livenet', validNames: [0,'livenet', 'mainnet'] },
+  { value: AtomNetworkType.NEXT_DAO, label: 'Endpoint 4', name: 'livenet', validNames: [0,'livenet', 'mainnet'] },
+  { value: AtomNetworkType.ATOMICALS_TEST, label: 'Endpoint 1', name: 'testnet', validNames: [1,'testnet'] },
+  { value: AtomNetworkType.WIZZ_TEST, label: 'Endpoint 2', name: 'testnet', validNames: [1,'testnet'] },
 ];
 
 export const MINIMUM_GAS_LIMIT = 21000;
