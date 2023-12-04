@@ -285,12 +285,14 @@ const Main = () => {
         const networkType = await wallet.getNetworkType();
         const atomNetworkType = await wallet.getAtomicalEndPoint();
         const customEndPoint = await wallet.getAtomicalCustomEndPoint(networkType);
+        const advanced = await wallet.getAdvanced()
         console.log('route', customEndPoint)
         dispatch(
           settingsActions.updateSettings({
             networkType,
             atomNetworkType,
-            atomCustomEndPoint: customEndPoint
+            atomCustomEndPoint: customEndPoint,
+            advanced,
           })
         );
 

@@ -12,6 +12,7 @@ export default function AdvancedScreen() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  console.log('advancedScreen', advanced)
   return (
     <Layout>
       <Header
