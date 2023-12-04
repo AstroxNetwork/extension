@@ -7,12 +7,9 @@ import { useLocation } from 'react-router-dom';
 import {
   CalcFeeOptions,
   LocalWallet,
-  getAddressType,
-  internalWallet,
   utxoToInput
 } from './local_wallet';
-import { AddressType, GasCalculateInterface, NetworkType } from '@/shared/types';
-import { DUST_AMOUNT } from '@/shared/constant';
+import { AddressType, NetworkType } from '@/shared/types';
 import { toPsbtNetwork } from '@/background/utils/tx-utils';
 import * as ecc from '@bitcoinerlab/secp256k1';
 import ECPairFactory from 'ecpair';
@@ -228,101 +225,6 @@ export const calculateFTFundsRequired = (
   };
 };
 
-export async function calculateGasV2(
-  fromAddress: string,
-  transferOptions: GasCalculateInterface,
-  satsbyte: number,
-  networkType: NetworkType
-): Promise<number> {
-  const network = toPsbtNetwork(networkType);
-  const addressType = getAddressType(fromAddress);
-  const wallet = new LocalWallet(internalWallet.WIF, networkType ? networkType : NetworkType.MAINNET, addressType);
-  const psbt = new bitcoin.Psbt({ network });
-  const psbt2 = new bitcoin.Psbt({ network });
-  const { output: scriptOutput } = detectAddressTypeToScripthash(wallet.address, networkType);
-  let tokenInputsLength = 0;
-  let tokenOutputsLength = 0;
-  for (const utxo of transferOptions.selectedUtxos) {
-    // Add the atomical input, the value from the input counts towards the total satoshi amount required
-    psbt.addInput(utxoToInput({ utxo, script: scriptOutput, pubkey: wallet.pubkey, addressType })!.data);
-    psbt2.addInput(utxoToInput({ utxo, script: scriptOutput, pubkey: wallet.pubkey, addressType })!.data);
-    tokenInputsLength += 1;
-  }
-
-  for (const output of transferOptions.outputs) {
-    // Add the atomical input, the value from the input counts towards the total satoshi amount required
-    if (output.value !== undefined) {
-      psbt.addOutput({
-        value: output.value,
-        address: fromAddress
-      });
-      psbt2.addOutput({
-        value: output.value,
-        address: fromAddress
-      });
-      tokenOutputsLength += 1;
-    }
-  }
-
-  if (tokenInputsLength > 0 && tokenOutputsLength > 0) {
-    let fee = await calculateNetworkFeeV2(psbt, wallet, satsbyte, addressType);
-    if (fee <= DUST_AMOUNT) {
-      return DUST_AMOUNT;
-    } else {
-      let addedValue = 0;
-      // psbt.data.inputs.forEach((v, i) => {
-      //   if (v.finalScriptSig || v.finalScriptWitness) {
-      //     psbt.clearFinalizedInput(i);
-      //   }
-      // });
-      if (transferOptions.regularsUTXOs && transferOptions.regularsUTXOs!.length > 0) {
-        const _regulars = transferOptions.regularsUTXOs;
-        for (let i = 0; i < transferOptions.regularsUTXOs.length; i += 1) {
-          const utxo = _regulars[i];
-          if (addedValue >= fee) {
-            break;
-          } else {
-            addedValue += utxo.value;
-            const { output } = detectAddressTypeToScripthash(wallet.address, networkType);
-            psbt2.addInput(utxoToInput({ utxo, addressType, pubkey: wallet.pubkey, script: output })!.data);
-            // psbt.setInputSequence(utxo.vout, 0xfffffffd);
-          }
-        }
-        if (addedValue - fee >= 546) {
-          psbt2.addOutput({
-            value: addedValue - fee,
-            address: fromAddress
-          });
-        }
-        fee = await calculateNetworkFeeV2(psbt2, wallet, satsbyte, addressType);
-      }
-      return fee;
-    }
-  }
-  return 0;
-}
-
-export async function calculateNetworkFeeV2(
-  psbt: bitcoin.Psbt,
-  wallet: LocalWallet,
-  feeRate: number,
-  addressType: AddressType
-): Promise<number> {
-  if (addressType === AddressType.P2PKH) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    psbt.__CACHE.__UNSAFE_SIGN_NONSEGWIT = true;
-  }
-
-  const _psbt = wallet.signPsbt(psbt);
-  let txSize = _psbt.extractTransaction(true).toBuffer().length;
-  _psbt.data.inputs.forEach((v) => {
-    if (v.finalScriptWitness) {
-      txSize -= v.finalScriptWitness.length * 0.75;
-    }
-  });
-  return Math.ceil(txSize * feeRate);
-}
 
 export function flattenObject(ob: any = {}) {
   const toReturn: { [key: string]: any } = {};
@@ -410,7 +312,7 @@ export function returnImageType(item: IAtomicalItem): { type: string; content: s
       }
     }
     const mediaType = contentType.includes('/') ? contentType.split('/')[1].toUpperCase() : contentType;
-    const data = findValueInDeepObject(fields, '$d');
+    const data = findValueInDeepObject(fields, '$b');
     const buffer = data ? Buffer.from(data, 'hex') : undefined;
     const b64String = data ? Buffer.from(data, 'hex').toString('base64') : undefined;
     content = `data:${contentType};base64,${b64String}`;

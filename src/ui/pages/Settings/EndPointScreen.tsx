@@ -100,7 +100,7 @@ export default function EndPointScreen() {
                   placeholder="https://"
                   disabled={selectCustom && isEdit == false}
                   onChange={(e) => {
-                    setCustomEndPoint(e.target.value);
+                    setCustomEndPoint(e.target.value.trim());
                   }}
                 />
               </div>

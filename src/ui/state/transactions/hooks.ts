@@ -16,6 +16,8 @@ import { getAddressType, utxoToInput } from '@/ui/utils/local_wallet';
 import { useNetworkType } from '../settings/hooks';
 import { toPsbtNetwork } from '@/background/utils/tx-utils';
 
+export const SATOSHI_MAX: number = 21 * 1e14;
+
 export interface BuildTxOptions {
   inputs: UTXO[];
   balances: UTXO[];
@@ -52,42 +54,47 @@ export function buildTx({
   address,
   autoFinalized
 }: BuildTxOptions): TxResult {
-  const newInputs = [...inputs];
-  const addressType = getAddressType(address)!;
+  const baseOutputs = outputs.map((e) => ({ ...e }));
+  const baseInputs = inputs.slice();
+  const addressType = getAddressType(address);
   let value = 0;
   const checkRemainder = (remainder: number) => {
     if (remainder >= 0) {
-      const newOutputs = [...outputs];
+      const newOutputs = baseOutputs.slice();
       if (remainder >= DUST_AMOUNT) {
         newOutputs.push({
           address: address,
-          value: remainder,
+          value: remainder
         });
       }
       const retFee = calcFee({
-        inputs: newInputs,
+        inputs: baseInputs,
         outputs: newOutputs,
         feeRate,
         addressType,
         network,
-        autoFinalized,
+        autoFinalized
       });
       const v = remainder - retFee;
       if (v >= 0) {
         if (v >= DUST_AMOUNT) {
+          const finOutputs = [
+            ...outputs,
+            {
+              address: address,
+              value: v
+            }
+          ];
           return {
             ok: {
-              fee: retFee,
-              inputs: newInputs,
+              fee: baseInputs.reduce((a, b) => a + b.value, 0) - finOutputs.reduce((a, b) => a + b.value, 0),
+              inputs: baseInputs,
               feeRate,
               network,
               address,
               addressType,
-              outputs: [...outputs, {
-                address: address,
-                value: v,
-              }],
-            },
+              outputs: finOutputs
+            }
           };
         } else {
           return {
@@ -96,10 +103,10 @@ export function buildTx({
               network,
               address,
               addressType,
-              fee: retFee + v,
-              inputs: newInputs,
-              outputs: outputs,
-            },
+              fee: baseInputs.reduce((a, b) => a + b.value, 0) - outputs.reduce((a, b) => a + b.value, 0),
+              inputs: baseInputs,
+              outputs
+            }
           };
         }
       }
@@ -109,20 +116,136 @@ export function buildTx({
   if (v) {
     return v;
   }
+  if (balances.length > 2) {
+    const base = {
+      ...balances[0],
+      value: SATOSHI_MAX
+    };
+    const v1 = calcFee({
+      inputs: [base],
+      outputs: baseOutputs,
+      feeRate,
+      addressType,
+      network,
+      autoFinalized
+    });
+    const v2 = calcFee({
+      inputs: [base, balances[1]],
+      outputs: baseOutputs,
+      feeRate,
+      addressType,
+      network,
+      autoFinalized
+    });
+    const offsetInput = v2 - v1;
+    let additionalOutput = 0;
+    for (const utxo of balances) {
+      if (utxo.value <= offsetInput) {
+        return {
+          error: 'Insufficient balance: Marginal cost of adding UTXOs exceeds the current UTXO balance'
+        };
+      }
+      value += utxo.value;
+      baseInputs.push(utxo);
+      const remainder = value - amount;
+      if (remainder >= 0) {
+        const fee = v1 + (baseInputs.length - 1) * offsetInput + additionalOutput;
+        const num = remainder - fee;
+        if (num >= DUST_AMOUNT) {
+          if (!additionalOutput) {
+            const v3 = calcFee({
+              inputs: [base],
+              outputs: [
+                ...baseOutputs,
+                {
+                  address: address,
+                  value: num
+                }
+              ],
+              feeRate,
+              addressType,
+              network,
+              autoFinalized
+            });
+            additionalOutput = v3 - v1;
+            const rr = num - additionalOutput;
+            if (rr >= DUST_AMOUNT) {
+              const finOutputs = [
+                ...outputs,
+                {
+                  address: address,
+                  value: rr
+                }
+              ];
+              return {
+                ok: {
+                  fee: baseInputs.reduce((a, b) => a + b.value, 0) - finOutputs.reduce((a, b) => a + b.value, 0),
+                  inputs: baseInputs,
+                  feeRate,
+                  network,
+                  address,
+                  addressType,
+                  outputs: finOutputs
+                }
+              };
+            }
+            continue;
+          }
+          const finOutputs = [
+            ...outputs,
+            {
+              address: address,
+              value: num
+            }
+          ];
+          return {
+            ok: {
+              fee: baseInputs.reduce((a, b) => a + b.value, 0) - finOutputs.reduce((a, b) => a + b.value, 0),
+              inputs: baseInputs,
+              feeRate,
+              network,
+              address,
+              addressType,
+              outputs: finOutputs
+            }
+          };
+        } else if (num >= 0) {
+          return {
+            ok: {
+              feeRate,
+              network,
+              address,
+              addressType,
+              fee: baseInputs.reduce((a, b) => a + b.value, 0) - outputs.reduce((a, b) => a + b.value, 0),
+              inputs: baseInputs,
+              outputs: outputs
+            }
+          };
+        }
+      }
+    }
+    return {
+      error: 'Insufficient balance'
+    };
+  }
+
   for (const utxo of balances) {
     value += utxo.value;
-    newInputs.push(utxo);
+    baseInputs.push(utxo);
     v = checkRemainder(value - amount);
     if (v) {
       return v;
     }
   }
   return {
-    error: 'Insufficient balance',
+    error: 'Insufficient balance'
   };
 }
 
-export function toPsbt({ tx, pubkey }: { tx: TxOk; pubkey: string }) {
+export function toPsbt({ tx, pubkey, rbf }: { tx: TxOk; pubkey: string; rbf?: boolean }) {
+  if (rbf == undefined) {
+    rbf = true;
+  }
   const psbt = new Psbt({ network: toPsbtNetwork(tx.network) });
   const { output } = detectAddressTypeToScripthash(tx.address, tx.network);
   for (const utxo of tx.inputs) {
@@ -133,7 +256,14 @@ export function toPsbt({ tx, pubkey }: { tx: TxOk; pubkey: string }) {
       script: output
     });
     if (utxoInput) {
-      psbt.addInput(utxoInput.data);
+      psbt.addInput(
+        rbf
+          ? {
+              ...utxoInput.data,
+              sequence: 0xfffffffd
+            }
+          : utxoInput.data
+      );
     }
   }
   psbt.addOutputs(tx.outputs);
@@ -187,122 +317,122 @@ export function useCreateBitcoinTxCallback() {
         feeRate = summary.list[1].feeRate;
       }
 
-      // const txResult = buildTx({
-      //   inputs: [],
-      //   outputs: [
-      //     {
-      //       address: toAddressInfo.address,
-      //       value: toAmount
-      //     }
-      //   ],
-      //   feeRate: feeRate,
-      //   address: fromAddress,
-      //   network: networkType,
-      //   balances: regularsUTXOs,
-      //   amount: toAmount
-      // });
-      // if (txResult.error) {
-      //   return {
-      //     psbtHex: '',
-      //     rawtx: '',
-      //     toAddressInfo,
-      //     err: txResult.error
-      //   };
-      // }
-      // const psbt = toPsbt({
-      //   tx: txResult.ok as TxOk,
-      //   pubkey: account.pubkey
-      // });
-      let inputValue = 0;
-      let inputUtxos: UTXO[] = [];
-      let fee;
-      console.time('calcFee');
-      const outputUtxos: { address: string; value: number }[] = [];
-      outputUtxos.push({
-        address: toAddressInfo.address,
-        value: toAmount
+      const txResult = buildTx({
+        inputs: [],
+        outputs: [
+          {
+            address: toAddressInfo.address,
+            value: toAmount
+          }
+        ],
+        feeRate: feeRate,
+        address: fromAddress,
+        network: networkType,
+        balances: regularsUTXOs,
+        amount: toAmount
       });
-      let v = -1;
-      for (const utxo of regularsUTXOs) {
-        inputValue += utxo.value;
-        inputUtxos.push(utxo);
-        const remainder = inputValue - toAmount;
-        if (remainder >= 0) {
-          const newOutputs: { address: string; value: number }[] = [...outputUtxos];
-          if (remainder >= DUST_AMOUNT) {
-            newOutputs.push({
-              address: fromAddress,
-              value: remainder
-            });
-          }
-          const retFee = calcFee({
-            inputs: inputUtxos,
-            outputs: newOutputs,
-            feeRate: feeRate,
-            addressType: getAddressType(fromAddress),
-            network: networkType
-          });
-          if (autoAdjust) {
-            fee = retFee;
-          }
-          v = remainder - retFee;
-          if (v >= 0) {
-            if (v >= DUST_AMOUNT) {
-              fee = retFee;
-            } else {
-              fee = retFee + v;
-            }
-            break;
-          }
-        }
+      if (txResult.error) {
+        return {
+          psbtHex: '',
+          rawtx: '',
+          toAddressInfo,
+          err: txResult.error
+        };
       }
-      console.timeEnd('calcFee');
-      const psbt = new Psbt({ network: toPsbtNetwork(networkType) });
-      // const psbt = new Psbt({ network: bitcoin.networks.bitcoin });
-      if (autoAdjust) {
-        psbt.addOutput({
-          address: toAddressInfo.address,
-          value: toAmount - fee
-        });
-      } else {
-        console.log('11111')
-        if (v < 0) {
-          return {
-            psbtHex: '',
-            rawtx: '',
-            toAddressInfo,
-            fee,
-            err: 'Insufficient balance.'
-          };
-        } else if (v >= DUST_AMOUNT) {
-          outputUtxos.push({
-            address: fromAddress,
-            value: v
-          });
-        }
-        for (const utxo of outputUtxos) {
-          psbt.addOutput(utxo);
-        }
-      }
-      const { output } = detectAddressTypeToScripthash(fromAddress, networkType);
-      for (const utxo of inputUtxos) {
-        const utxoInput = utxoToInput({
-          utxo,
-          pubkey: account.pubkey,
-          addressType: getAddressType(fromAddress),
-          script: output
-        });
-        if (utxoInput) {
-          psbt.addInput(utxoInput.data);
-        } else {
-          return {
-            psbtHex: '',
-            rawtx: '',
-            toAddressInfo,
-            err: 'Invalid fromAddress.'
-          };
-        }
-      }
+      const psbt = toPsbt({
+        tx: txResult.ok as TxOk,
+        pubkey: account.pubkey
+      });
+      // let inputValue = 0;
+      // let inputUtxos: UTXO[] = [];
+      // let fee;
+      // console.time('calcFee');
+      // const outputUtxos: { address: string; value: number }[] = [];
+      // outputUtxos.push({
+      //   address: toAddressInfo.address,
+      //   value: toAmount
+      // });
+      // let v = -1;
+      // for (const utxo of regularsUTXOs) {
+      //   inputValue += utxo.value;
+      //   inputUtxos.push(utxo);
+      //   const remainder = inputValue - toAmount;
+      //   if (remainder >= 0) {
+      //     const newOutputs: { address: string; value: number }[] = [...outputUtxos];
+      //     if (remainder >= DUST_AMOUNT) {
+      //       newOutputs.push({
+      //         address: fromAddress,
+      //         value: remainder
+      //       });
+      //     }
+      //     const retFee = calcFee({
+      //       inputs: inputUtxos,
+      //       outputs: newOutputs,
+      //       feeRate: feeRate,
+      //       addressType: getAddressType(fromAddress),
+      //       network: networkType
+      //     });
+      //     if (autoAdjust) {
+      //       fee = retFee;
+      //     }
+      //     v = remainder - retFee;
+      //     if (v >= 0) {
+      //       if (v >= DUST_AMOUNT) {
+      //         fee = retFee;
+      //       } else {
+      //         fee = retFee + v;
+      //       }
+      //       break;
+      //     }
+      //   }
+      // }
+      // console.timeEnd('calcFee');
+      // const psbt = new Psbt({ network: toPsbtNetwork(networkType) });
+      // // const psbt = new Psbt({ network: bitcoin.networks.bitcoin });
+      // if (autoAdjust) {
+      //   psbt.addOutput({
+      //     address: toAddressInfo.address,
+      //     value: toAmount - fee
+      //   });
+      // } else {
+      //   console.log('11111')
+      //   if (v < 0) {
+      //     return {
+      //       psbtHex: '',
+      //       rawtx: '',
+      //       toAddressInfo,
+      //       fee,
+      //       err: 'Insufficient balance.'
+      //     };
+      //   } else if (v >= DUST_AMOUNT) {
+      //     outputUtxos.push({
+      //       address: fromAddress,
+      //       value: v
+      //     });
+      //   }
+      //   for (const utxo of outputUtxos) {
+      //     psbt.addOutput(utxo);
+      //   }
+      // }
+      // const { output } = detectAddressTypeToScripthash(fromAddress, networkType);
+      // for (const utxo of inputUtxos) {
+      //   const utxoInput = utxoToInput({
+      //     utxo,
+      //     pubkey: account.pubkey,
+      //     addressType: getAddressType(fromAddress),
+      //     script: output
+      //   });
+      //   if (utxoInput) {
+      //     psbt.addInput(utxoInput.data);
+      //   } else {
+      //     return {
+      //       psbtHex: '',
+      //       rawtx: '',
+      //       toAddressInfo,
+      //       err: 'Invalid fromAddress.'
+      //     };
+      //   }
+      // }
       const psbtHex = psbt.toHex();
       const s = await wallet.signPsbtReturnHex(psbtHex, { autoFinalized: true });
       const signPsbt = Psbt.fromHex(s);
@@ -314,16 +444,16 @@ export function useCreateBitcoinTxCallback() {
           rawtx,
           psbtHex,
           fromAddress,
-          // feeRate: (txResult.ok as TxOk).feeRate,
-          fee,
+          feeRate: (txResult.ok as TxOk).feeRate
+          // fee,
         })
       );
       const rawTxInfo: RawTxInfo = {
         psbtHex,
         rawtx,
         toAddressInfo,
-        fee,
-        // fee: (txResult.ok as TxOk).feeRate
+        // fee,
+        fee: (txResult.ok as TxOk).feeRate
       };
       return rawTxInfo;
     },

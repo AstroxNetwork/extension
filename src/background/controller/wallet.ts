@@ -1344,141 +1344,167 @@ export class WalletController extends BaseController {
       }
       this.changeAtomicalEndpoint(newHost);
     }
-    const { scripthash, output } = detectAddressTypeToScripthash(address, network);
-    const res = await this.atomicalApi.electrumApi.atomicalsByScripthash(scripthash, true);
-    console.log('res', res);
-    let cursor = 0;
-    const size = 100;
-    let hasMore = true;
-    const oldOrdinals: any[] = [];
-    while (hasMore) {
-      const v = await this.getAddressInscriptions(address, cursor, size);
-      oldOrdinals.push(...(v?.list || []));
-      cursor += size;
-      hasMore = oldOrdinals.length < v.total;
-    }
-    const txs = await (network === NetworkType.MAINNET ? mempoolService : mempoolServiceTest).txsMempool(address);
-    const unconfirmedVinSet = new Set(txs!.map((e) => e.vin.map((e) => e.txid + ':' + e.vout)).flat());
-    const all = (res.utxos as AtomUtxo[]).sort((a, b) => b.value - a.value);
-    const confirmedUTXOs: AtomUtxo[] = [];
-    let confirmedValue = 0;
-    const atomicalsUTXOs: AtomUtxo[] = [];
-    let atomicalsValue = 0;
-    const ordinalsUTXOs: AtomUtxo[] = [];
-    let ordinalsValue = 0;
-    const regularsUTXOs: AtomUtxo[] = [];
-    let regularsValue = 0;
-    const unconfirmedUTXOs: AtomUtxo[] = [];
-    let unconfirmedValue = 0;
-    const atomicalsWithOrdinalsUTXOs: AtomUtxo[] = [];
-    let atomicalsWithOrdinalsValue = 0;
-    const mergedUTXOs: AtomUtxo[] = [];
-    for (const utxo of all) {
-      if (unconfirmedVinSet.has(utxo.txid + ':' + utxo.vout)) {
-        unconfirmedValue += utxo.value;
-        unconfirmedUTXOs.push(utxo);
-      } else {
-        confirmedValue += utxo.value;
-        confirmedUTXOs.push(utxo);
-
-        const isAtomical = utxo.atomicals && utxo.atomicals.length;
-        const findOrdinal = oldOrdinals.find((item) => {
-          const split = item.output.split(':');
-          return split[0] === utxo.txid && parseInt(split[1], 10) === utxo.vout;
-        });
-        if (findOrdinal && isAtomical) {
-          console.log(findOrdinal);
-          atomicalsWithOrdinalsUTXOs.push(utxo);
-          atomicalsWithOrdinalsValue += utxo.value;
-          mergedUTXOs.push(utxo);
+    try {
+      const { scripthash, output } = detectAddressTypeToScripthash(address, network);
+      const res = await this.atomicalApi.electrumApi.atomicalsByScripthash(scripthash, true);
+      console.log('res', res);
+      let cursor = 0;
+      const size = 100;
+      let hasMore = true;
+      const oldOrdinals: any[] = [];
+      while (hasMore) {
+        const v = await this.getAddressInscriptions(address, cursor, size);
+        oldOrdinals.push(...(v?.list || []));
+        cursor += size;
+        hasMore = oldOrdinals.length < v.total;
+      }
+      const txs = await (network === NetworkType.MAINNET ? mempoolService : mempoolServiceTest).txsMempool(address);
+      const unconfirmedVinSet = new Set(txs!.map((e) => e.vin.map((e) => e.txid + ':' + e.vout)).flat());
+      const all = (res.utxos as AtomUtxo[]).sort((a, b) => b.value - a.value);
+      const confirmedUTXOs: AtomUtxo[] = [];
+      let confirmedValue = 0;
+      const atomicalsUTXOs: AtomUtxo[] = [];
+      let atomicalsValue = 0;
+      const ordinalsUTXOs: AtomUtxo[] = [];
+      let ordinalsValue = 0;
+      const regularsUTXOs: AtomUtxo[] = [];
+      let regularsValue = 0;
+      const unconfirmedUTXOs: AtomUtxo[] = [];
+      let unconfirmedValue = 0;
+      const atomicalsWithOrdinalsUTXOs: AtomUtxo[] = [];
+      let atomicalsWithOrdinalsValue = 0;
+      const mergedUTXOs: AtomUtxo[] = [];
+      for (const utxo of all) {
+        if (unconfirmedVinSet.has(utxo.txid + ':' + utxo.vout)) {
+          unconfirmedValue += utxo.value;
+          unconfirmedUTXOs.push(utxo);
         } else {
-          if (isAtomical) {
-            atomicalsValue += utxo.value;
-            atomicalsUTXOs.push(utxo);
-            if (utxo.atomicals && utxo.atomicals.length > 1) {
-              mergedUTXOs.push(utxo);
+          confirmedValue += utxo.value;
+          confirmedUTXOs.push(utxo);
+
+          const isAtomical = utxo.atomicals && utxo.atomicals.length;
+          const findOrdinal = oldOrdinals.find((item) => {
+            const split = item.output.split(':');
+            return split[0] === utxo.txid && parseInt(split[1], 10) === utxo.vout;
+          });
+          if (findOrdinal && isAtomical) {
+            console.log(findOrdinal);
+            atomicalsWithOrdinalsUTXOs.push(utxo);
+            atomicalsWithOrdinalsValue += utxo.value;
+            mergedUTXOs.push(utxo);
+          } else {
+            if (isAtomical) {
+              atomicalsValue += utxo.value;
+              atomicalsUTXOs.push(utxo);
+              if (utxo.atomicals && utxo.atomicals.length > 1) {
+                mergedUTXOs.push(utxo);
+              }
             }
           }
-        }
-        if (findOrdinal) {
-          ordinalsUTXOs.push(utxo);
-          ordinalsValue += utxo.value;
-        }
+          if (findOrdinal) {
+            ordinalsUTXOs.push(utxo);
+            ordinalsValue += utxo.value;
+          }
 
-        if (!isAtomical && !findOrdinal) {
-          regularsUTXOs.push(utxo);
-          regularsValue += utxo.value;
-        }
-      }
-    }
-    const unconfirmedAtomicalIds = new Set(unconfirmedUTXOs.map((e) => e.atomicals).flat());
-    const atomicalFTs: (IAtomicalItem & { utxos: AtomUtxo[] })[] = [];
-    const atomicalNFTs: IAtomicalItem[] = [];
-    const atomicalMerged: IMergedAtomicals[] = [];
-    const allAtomicals = res.atomicals || {};
-    for (const key in allAtomicals) {
-      const atomical = allAtomicals[key] as IAtomicalBalanceItem;
-      const data = atomical.data;
-      const item = {
-        ...data,
-        value: atomical.confirmed,
-        confirmed: !unconfirmedAtomicalIds.has(atomical.atomical_id)
-      };
-      const find = mergedUTXOs.find((e) => e.atomicals?.includes(atomical.atomical_id));
-      if (find) {
-        const v = atomicalMerged.find((e) => e.txid === find!.txid && e.vout === find!.vout);
-        if (v) {
-          v.atomicals.push(item);
-        } else {
-          atomicalMerged.push({
-            ...find,
-            atomicals: [item],
-            hasOrdinals: atomicalsWithOrdinalsUTXOs.some((e) => e.txid == find.txid && e.vout == find.vout)
-          });
-        }
-      } else if (atomical.type === 'FT') {
-        const v = atomicalFTs.find((e) => e.$ticker === atomical.ticker);
-        const utxos = atomicalsUTXOs.filter((e) => e.atomicals?.includes(atomical.atomical_id))!;
-        if (utxos.length) {
-          if (v) {
-            v.utxos.push(...utxos);
-            v.value += utxos.reduce((a, b) => a + b.value, 0);
-          } else {
-            atomicalFTs.push({
-              ...item,
-              confirmed: true,
-              utxos: utxos,
-              value: utxos.reduce((a, b) => a + b.value, 0)
-            });
+          if (!isAtomical && !findOrdinal) {
+            regularsUTXOs.push(utxo);
+            regularsValue += utxo.value;
           }
         }
-      } else if (atomical.type === 'NFT') {
-        atomicalNFTs.push(item);
       }
-    }
-    console.log('oldOrdinals', oldOrdinals);
-    const balance: IWalletBalance = {
-      address,
-      output,
-      scripthash,
-      atomicalFTs,
-      atomicalNFTs,
-      atomicalMerged,
-      confirmedUTXOs,
-      confirmedValue,
-      atomicalsUTXOs,
-      atomicalsValue,
-      ordinalsUTXOs,
-      ordinalsValue,
-      regularsUTXOs,
-      regularsValue,
-      unconfirmedUTXOs,
-      unconfirmedValue,
-      atomicalsWithOrdinalsUTXOs,
-      atomicalsWithOrdinalsValue
-    };
+      const unconfirmedAtomicalIds = new Set(unconfirmedUTXOs.map((e) => e.atomicals).flat());
+      const atomicalFTs: (IAtomicalItem & { utxos: AtomUtxo[] })[] = [];
+      const atomicalNFTs: IAtomicalItem[] = [];
+      const atomicalMerged: IMergedAtomicals[] = [];
+      const allAtomicals = res.atomicals || {};
+      for (const key in allAtomicals) {
+        const atomical = allAtomicals[key] as IAtomicalBalanceItem;
+        const data = atomical.data;
+        const item = {
+          ...data,
+          value: atomical.confirmed,
+          confirmed: !unconfirmedAtomicalIds.has(atomical.atomical_id)
+        };
+        const find = mergedUTXOs.find((e) => e.atomicals?.includes(atomical.atomical_id));
+        if (find) {
+          const v = atomicalMerged.find((e) => e.txid === find!.txid && e.vout === find!.vout);
+          if (v) {
+            v.atomicals.push(item);
+          } else {
+            atomicalMerged.push({
+              ...find,
+              atomicals: [item],
+              hasOrdinals: atomicalsWithOrdinalsUTXOs.some((e) => e.txid == find.txid && e.vout == find.vout)
+            });
+          }
+        } else if (atomical.type === 'FT') {
+          const v = atomicalFTs.find((e) => e.$ticker === atomical.ticker);
+          const utxos = atomicalsUTXOs.filter((e) => e.atomicals?.includes(atomical.atomical_id))!;
+          if (utxos.length) {
+            if (v) {
+              v.utxos.push(...utxos);
+              v.value += utxos.reduce((a, b) => a + b.value, 0);
+            } else {
+              atomicalFTs.push({
+                ...item,
+                confirmed: true,
+                utxos: utxos,
+                value: utxos.reduce((a, b) => a + b.value, 0)
+              });
+            }
+          }
+        } else if (atomical.type === 'NFT') {
+          atomicalNFTs.push(item);
+        }
+      }
+      console.log('oldOrdinals', oldOrdinals);
+      const balance: IWalletBalance = {
+        address,
+        output,
+        error: '',
+        scripthash,
+        atomicalFTs,
+        atomicalNFTs,
+        atomicalMerged,
+        confirmedUTXOs,
+        confirmedValue,
+        atomicalsUTXOs,
+        atomicalsValue,
+        ordinalsUTXOs,
+        ordinalsValue,
+        regularsUTXOs,
+        regularsValue,
+        unconfirmedUTXOs,
+        unconfirmedValue,
+        atomicalsWithOrdinalsUTXOs,
+        atomicalsWithOrdinalsValue
+      };
 
-    return balance;
+      return balance;
+    } catch {
+      return {
+        address,
+        output: '',
+        error: 'balanceOf throw error',
+        scripthash: '',
+        atomicalFTs: [],
+        atomicalNFTs: [],
+        atomicalMerged: [],
+        confirmedUTXOs: [],
+        confirmedValue: 0,
+        atomicalsUTXOs: [],
+        atomicalsValue: 0,
+        ordinalsUTXOs: [],
+        ordinalsValue: 0,
+        regularsUTXOs: [],
+        regularsValue: 0,
+        unconfirmedUTXOs: [],
+        unconfirmedValue: 0,
+        atomicalsWithOrdinalsUTXOs: [],
+        atomicalsWithOrdinalsValue: 0
+      };
+    }
+
   };
 
   expireUICachedData = (address: string) => {

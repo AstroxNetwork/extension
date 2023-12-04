@@ -158,7 +158,7 @@ function Preview(props: { selectValues: string[]; updateStep: (step: Step) => vo
             <Column mt="lg">
               <Text text="NFTs" preset="regular" color="textDim" />
               <Text
-                text={`All Include: ${selectAtomcalsNFTs
+                text={`Including:: ${selectAtomcalsNFTs
                   .map((o) => o.value)
                   .reduce((pre, cur) => pre + cur, 0)
                   .toLocaleString()} sats`}
@@ -178,7 +178,7 @@ function Preview(props: { selectValues: string[]; updateStep: (step: Step) => vo
                       {type === 'realm' ? <Text text={content} /> : <Image src={content} size={24} style={{
                         height: 24,
                         width: 'auto',
-                        maxWidth: 80,
+                        // maxWidth: 80,
                       }} />}
                     </Column>
                     <Text text={`# ${data.atomical_number}`} textCenter color="textDim" size="xs" />

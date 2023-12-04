@@ -411,6 +411,7 @@ export interface IWalletBalance {
   atomicalMerged: IMergedAtomicals[];
   atomicalNFTs: IAtomicalItem[];
   scripthash: string;
+  error: string;
   output: string | Buffer;
   address: string;
   atomicalsUTXOs: UTXO[];

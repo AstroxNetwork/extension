@@ -10,16 +10,18 @@ export const WarningPopver = ({
   text,
   onClose,
   onChecked,
-  checkText
+  checkText,
+  hiddenClose,
 }: {
   text: string;
   onChecked?: (value) => void;
   checkText?: string;
+  hiddenClose?: boolean;
   onClose: () => void;
 }) => {
   const [checked, setChecked] = useState(false);
   return (
-    <Popover onClose={() => {
+    <Popover hiddenClose={hiddenClose} onClose={() => {
       if(onChecked && !checked) return;
       onClose && onClose();
     }}>

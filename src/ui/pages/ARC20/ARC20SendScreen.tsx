@@ -101,10 +101,6 @@ function Step1({
     error: error2,
     utxos,
     outputs,
-    remaining_utxos,
-    remaining,
-    remaining_min,
-    totalAmount
   } = useMemo(() => {
     const currentOutputValue = Number(inputAmount);
     if (currentOutputValue < DUST_AMOUNT) {

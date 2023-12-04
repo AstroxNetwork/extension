@@ -310,6 +310,7 @@ export default function SignPsbt({
   const [warningVisible, setWarningVisible] = useState(false);
 
   const [isWarningVisible, setIsWarningVisible] = useState(false);
+  const [isCloseWindow, setIsCloseWindow] = useState(false);
   const [checked, setChecked] = useState(false);
   const init = async () => {
     let txError = '';
@@ -336,6 +337,8 @@ export default function SignPsbt({
         }
       }
     }
+    // const psbt = Psbt.fromHex(psbtHex);
+    // console.log('psbt', psbt)
 
     // else if (type === TxType.SEND_INSCRIPTION) {
     //   if (!psbtHex && toAddress && inscriptionId) {
@@ -379,7 +382,7 @@ export default function SignPsbt({
       const atomicalItems = atomUtxo ? atomUtxo?.atomicals?.map(id => {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         //@ts-ignore
-        const atomical = [...atomicals.atomicalFTs, ...atomicals.atomicalNFTs].find(o => o.atomical_id === id)
+        const atomical = [...atomicals.atomicalFTs, ...atomicals.atomicalNFTs, ...atomicals.atomicalMerged.map(o => o.atomicals).flat()].find(o => o.atomical_id === id)
         return atomical as IAtomicalItem
       }) : []
       return {
@@ -410,9 +413,9 @@ export default function SignPsbt({
         atomicalFTvalide =  false
       }
     }
-    if (!(inputInfosAndAtoms.every((v) => {
-      const confrim = atomicals.confirmedUTXOs?.find(o => o.txid === v.txid && o.vout === v.vout)
-      return confrim
+    if ((atomicals.unconfirmedUTXOs.some((v) => {
+      const found = inputInfosAndAtoms?.find(o => o.txid === v.txid && o.vout === v.vout)
+      return found
     }))) {
       setWarningVisible(true);
       setWarning('Unconfirmed funds detected, risking burn!! Proceed at risk!');
@@ -444,7 +447,13 @@ export default function SignPsbt({
 
   useEffect(() => {
     if(atomicals.address) {
-      init();
+      if(atomicals.error) {
+        setIsWarningVisible(true);
+        setIsCloseWindow(true)
+        setWarning(atomicals.error);
+      } else {
+        init();
+      }
     }
   }, [atomicals.address]);
 
@@ -525,6 +534,20 @@ export default function SignPsbt({
       </Layout>
     );
   }
+
+  if (loading) {
+    return (
+      <Layout>
+        <Content itemsCenter justifyCenter>
+          <Icon size={fontSizes.xxxl} color="gold">
+            <LoadingOutlined />
+          </Icon>
+          <Text text="Checking UTXO..." color='gold'/>
+        </Content>
+      </Layout>
+    );
+  }
+
 
   if (!header && session) {
     header = (
@@ -783,15 +806,19 @@ export default function SignPsbt({
       </Footer>
       {isWarningVisible && (
         <WarningPopver
-          text={txInfo.decodedPsbt.warning}
+          text={txInfo.decodedPsbt.warning || warning}
           onClose={() => {
             setIsWarningVisible(false);
+            if(isCloseWindow) {
+              rejectApproval();
+            }
           }}
         />
       )}
       {
         warningVisible && (
           <WarningPopver
+            hiddenClose
             text={warning}
             checkText={'I accept the risk.'}
             onChecked={(value) => {

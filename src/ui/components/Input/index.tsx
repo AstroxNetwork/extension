@@ -1,6 +1,6 @@
 import bitcore from 'bitcore-lib';
 import { isNull } from 'lodash';
-import React, { CSSProperties, useEffect, useState } from 'react';
+import React, { CSSProperties, forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 
 import { SATS_DOMAIN, UNISAT_DOMAIN } from '@/shared/constant';
 import { Inscription } from '@/shared/types';
@@ -34,6 +34,10 @@ export interface InputProps {
   onAmountInputChange?: (amount: string) => void;
   disabled?: boolean;
   disableDecimal?: boolean;
+}
+
+export interface InputRef {
+  onChange: (value) => void;
 }
 
 type Presets = keyof typeof $inputPresets;
@@ -86,9 +90,15 @@ function PasswordInput(props: InputProps) {
   );
 }
 
-function AmountInput(props: InputProps) {
+const  AmountInput = forwardRef<InputRef, InputProps>((props: InputProps, ref) => {
   const { placeholder, onAmountInputChange, disabled, style: $inputStyleOverride, disableDecimal, ...rest } = props;
   const $style = Object.assign({}, $baseInputStyle, $inputStyleOverride, disabled ? { color: colors.textDim } : {});
+
+  useImperativeHandle(ref, () => ({
+    onChange: (value) => {
+      handleInputAmount({ target: { value } });
+    }
+  }));
 
   if (!onAmountInputChange) {
     return <div />;
@@ -126,7 +136,7 @@ function AmountInput(props: InputProps) {
       />
     </div>
   );
-}
+})
 
 export const AddressInput = (props: InputProps) => {
   const { placeholder, onAddressInputChange, addressInputData, style: $inputStyleOverride, ...rest } = props;
@@ -244,16 +254,16 @@ function TextInput(props: InputProps) {
   );
 }
 
-export function Input(props: InputProps) {
+export const Input = forwardRef<InputRef, InputProps>((props: InputProps, ref ) => {
   const { preset } = props;
 
   if (preset === 'password') {
     return <PasswordInput {...props} />;
   } else if (preset === 'amount') {
-    return <AmountInput {...props} />;
+    return <AmountInput {...props} ref={ref} />;
   } else if (preset === 'address') {
     return <AddressInput {...props} />;
   } else {
-    return <TextInput {...props} />;
+    return <TextInput {...props}  />;
   }
-}
+})

@@ -48,7 +48,6 @@ export function useAppSummary() {
 
 export function useAtomicals():IWalletBalance {
   const accountsState = useAccountsState();
-  console.log('useAtomicals', accountsState.atomicals);
   return accountsState.atomicals[accountsState.current.address];
 }
 
@@ -201,7 +200,7 @@ export function useAtomicalsCallback() {
     // console.log({ _utxo });
     const res = await wallet.getAtomicals(
       currentAccount.address,
-      // 'bc1pzpg7qatkz2e8mlhky987h5zfmq3e6aztwchxut38av2lmluktj6qlhfggu',
+      // 'bc1pmetyl0yhqh0yy8ddkyeluzpm4t2dzwg4698zjsqdpye0kmu2k9vqwype3v',
       networkType,
     );
     // console.log({ _utxo });

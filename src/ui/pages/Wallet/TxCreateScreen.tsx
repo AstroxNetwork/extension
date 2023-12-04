@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { DUST_AMOUNT } from '@/shared/constant';
 import { Inscription, RawTxInfo } from '@/shared/types';
 import { Layout, Content, Button, Header, Icon, Text, Input, Column, Row } from '@/ui/components';
 import { FeeRateBar } from '@/ui/components/FeeRateBar';
 import { useNavigate } from '@/ui/pages/MainRoute';
-import { useAccountBalance, useAtomicals } from '@/ui/state/accounts/hooks';
+import { useAccountBalance } from '@/ui/state/accounts/hooks';
 import {
   useBitcoinTx,
   useCreateBitcoinTxCallback,
@@ -14,6 +14,8 @@ import {
 } from '@/ui/state/transactions/hooks';
 import { colors } from '@/ui/theme/colors';
 import { amountToSatoshis, isValidAddress, satoshisToAmount } from '@/ui/utils';
+import { InputRef } from '@/ui/components/Input';
+import { debounce } from 'lodash-es'
 
 export default function TxCreateScreen() {
   const accountBalance = useAccountBalance();
@@ -38,6 +40,12 @@ export default function TxCreateScreen() {
 
   const [autoAdjust, setAutoAdjust] = useState(false);
   const fetchUtxos = useFetchUtxosCallback();
+  const amountChange = debounce((amount) => {
+    if (autoAdjust == true && amount != accountBalance.btc_amount.toString()) {
+      setAutoAdjust(false);
+    }
+    setInputAmount(amount);
+  }, 600)
 
   useEffect(() => {
     fetchUtxos();
@@ -57,8 +65,7 @@ export default function TxCreateScreen() {
   const dustAmount = useMemo(() => satoshisToAmount(DUST_AMOUNT), [DUST_AMOUNT]);
 
   const [feeRate, setFeeRate] = useState(5);
-  const atomicals = useAtomicals();
-  const [testValue, settestValue] = useState('')
+  const inputRef = useRef<InputRef>(null);
 
   const [rawTxInfo, setRawTxInfo] = useState<RawTxInfo>();
   useEffect(() => {
@@ -152,7 +159,7 @@ export default function TxCreateScreen() {
             ) : (
               <Row
                 onClick={() => {
-                  setInputAmount(accountBalance.btc_amount.toString());
+                  inputRef.current?.onChange(accountBalance.btc_amount.toString());
                   setAutoAdjust(true);
                 }}>
                 <Text
@@ -170,7 +177,7 @@ export default function TxCreateScreen() {
 
               <Row
                 onClick={() => {
-                  setInputAmount(accountBalance.btc_amount.toString());
+                  inputRef.current?.onChange(accountBalance.btc_amount.toString());
                   setAutoAdjust(true);
                 }}>
                 <Text text={'MAX'} color={autoAdjust ? 'yellow' : 'textDim'} size="sm" />
@@ -179,16 +186,12 @@ export default function TxCreateScreen() {
             </Row>
           )}
           <Input
+            ref={inputRef}
             preset="amount"
             placeholder={'Amount'}
             defaultValue={inputAmount}
             // value={inputAmount}
-            onAmountInputChange={(amount) => {
-              if (autoAdjust == true) {
-                setAutoAdjust(false);
-              }
-              setInputAmount(amount);
-            }}
+            onAmountInputChange={amountChange}
           />
         </Column>
 

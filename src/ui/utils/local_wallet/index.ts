@@ -96,6 +96,8 @@ export function getAddressType(address: string): AddressType {
     return AddressType.P2SH_P2WPKH;
   } else if (address.startsWith('tb1p')) {
     return AddressType.P2TR;
+  } else if (address.startsWith('bcrt1p')) {
+    return AddressType.P2TR;
   } else {
     return AddressType.UNKNOWN;
   }
