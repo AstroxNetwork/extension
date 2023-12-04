@@ -744,6 +744,16 @@ export class WalletController extends BaseController {
     preferenceService.setAtomicalCustomeEndPoint(networkType, host);
   };
 
+
+  getAdvanced = () => {
+    const advanced = preferenceService.getAdvanced();
+    return advanced;
+  };
+
+  setAdvanced = (advanced) => {
+    preferenceService.setAdvanced(advanced);
+  };
+
   // sendBTC = async ({
   //   to,
   //   amount,

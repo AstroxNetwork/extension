@@ -19,6 +19,7 @@ import { LoadingOutlined } from '@ant-design/icons';
 import AtomicalPreview from '@/ui/components/AtomicalPreview';
 import { IAtomicalItem } from '@/background/service/interfaces/api';
 import { Psbt } from 'bitcoinjs-lib';
+import { useAdvanced } from '@/ui/state/settings/hooks';
 
 interface Props {
   header?: React.ReactNode;
@@ -295,7 +296,7 @@ export default function SignPsbt({
   const [txInfo, setTxInfo] = useState<TxInfo>(initTxInfo);
 
   const [tabState, setTabState] = useState(TabState.DATA);
-
+  const advanced = useAdvanced();
   const createBitcoinTx = useCreateBitcoinTxCallback();
   const createOrdinalsTx = useCreateMultiOrdinalsTxCallback();
   const wallet = useWallet();
@@ -394,7 +395,7 @@ export default function SignPsbt({
     console.log('inputInfosAndAtoms', inputInfosAndAtoms);
     const withAtomical = inputInfosAndAtoms.some(o => o.atomicalItems.length > 0);
     let atomicalFTvalide = true;
-    if(withAtomical) {
+    if(withAtomical && advanced.securityCheck) {
       try {
         const s = await wallet.signPsbtReturnHex(psbtHex, { autoFinalized: true });
         const signPsbt = Psbt.fromHex(s);

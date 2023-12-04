@@ -24,10 +24,11 @@ export enum NetworkType {
 export enum AtomNetworkType {
   WIZZ = 'https://ep.atomicalswallet.com/proxy',
   ATOMICALS = 'https://ep.atomicals.xyz/proxy',
-  ATOMICALS_MARKET = 'https://ep.atomicalmarket.com/proxy',
-  WIZZ_TEST = 'https://eptest.atomicalswallet.com/proxy',
-  ATOMICALS_TEST = 'https://eptestnet.atomicals.xyz/proxy',
   NEXT_DAO = 'https://ep.nextdao.xyz/proxy',
+  CONSYNC = 'https://ep.consync.xyz/proxy',
+  ATOMICALS_MARKET = 'https://ep.atomicalmarket.com/proxy',
+  ATOMICALS_TEST = 'https://eptestnet.atomicals.xyz/proxy',
+  WIZZ_TEST = 'https://eptest.atomicalswallet.com/proxy',
  }
 
 export enum RestoreWalletType {

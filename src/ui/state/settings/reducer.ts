@@ -9,6 +9,10 @@ export interface SettingsState {
   networkType: NetworkType;
   atomNetworkType: AtomNetworkType;
   atomCustomEndPoint: string | AtomNetworkType;
+  advanced: {
+    rbf: boolean;
+    securityCheck: boolean;
+  }
   walletConfig: WalletConfig;
   skippedVersion: string;
 }
@@ -19,6 +23,10 @@ export const initialState: SettingsState = {
   networkType: NetworkType.MAINNET,
   atomNetworkType: AtomNetworkType.ATOMICALS,
   atomCustomEndPoint: '',
+  advanced: {
+    rbf: false,
+    securityCheck: true
+  },
   walletConfig: {
     version: '',
     moonPayEnabled: true,
@@ -43,6 +51,10 @@ const slice = createSlice({
           networkType?: NetworkType;
           atomNetworkType?: AtomNetworkType;
           atomCustomEndPoint?: string;
+          advanced?: {
+            rbf: boolean;
+            securityCheck: boolean;
+          }
           walletConfig?: WalletConfig;
           skippedVersion?: string;
         };

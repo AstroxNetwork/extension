@@ -60,6 +60,11 @@ export function useAtomicalCustomEndPoint() {
   return accountsState.atomCustomEndPoint;
 }
 
+export function useAdvanced() {
+  const accountsState = useSettingsState();
+  return accountsState.advanced;
+}
+
 export function useChangeNetworkTypeCallback() {
   const dispatch = useAppDispatch();
   const wallet = useWallet();
@@ -112,6 +117,23 @@ export function useChangeAtomCustomEndPointCallback() {
       );
     },
     [dispatch, networkType]
+  );
+}
+
+
+export function useAdvancedCallback() {
+  const dispatch = useAppDispatch();
+  const wallet = useWallet();
+  return useCallback(
+    async (advanced) => {
+      await wallet.setAdvanced(advanced)
+      dispatch(
+        settingsActions.updateSettings({
+          advanced
+        })
+      );
+    },
+    [dispatch]
   );
 }
 

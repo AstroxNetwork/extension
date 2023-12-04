@@ -13,7 +13,7 @@ import { detectAddressTypeToScripthash } from '@/background/service/utils';
 import { UTXO } from '@/background/service/interfaces/utxo';
 import { DUST_AMOUNT } from '@/shared/constant';
 import { getAddressType, utxoToInput } from '@/ui/utils/local_wallet';
-import { useNetworkType } from '../settings/hooks';
+import { useAdvanced, useNetworkType } from '../settings/hooks';
 import { toPsbtNetwork } from '@/background/utils/tx-utils';
 
 export const SATOSHI_MAX: number = 21 * 1e14;
@@ -288,6 +288,7 @@ export function useCreateBitcoinTxCallback() {
   // const fetchUtxos = useFetchUtxosCallback();
   const atomicals = useAtomicals();
   const networkType = useNetworkType();
+  const advanced = useAdvanced()
 
   return useCallback(
     async (toAddressInfo: ToAddressInfo, toAmount: number, feeRate?: number, receiverToPayFee = false) => {
@@ -341,98 +342,10 @@ export function useCreateBitcoinTxCallback() {
       }
       const psbt = toPsbt({
         tx: txResult.ok as TxOk,
-        pubkey: account.pubkey
+        pubkey: account.pubkey,
+        rbf: advanced.rbf
       });
-      // let inputValue = 0;
-      // let inputUtxos: UTXO[] = [];
-      // let fee;
-      // console.time('calcFee');
-      // const outputUtxos: { address: string; value: number }[] = [];
-      // outputUtxos.push({
-      //   address: toAddressInfo.address,
-      //   value: toAmount
-      // });
-      // let v = -1;
-      // for (const utxo of regularsUTXOs) {
-      //   inputValue += utxo.value;
-      //   inputUtxos.push(utxo);
-      //   const remainder = inputValue - toAmount;
-      //   if (remainder >= 0) {
-      //     const newOutputs: { address: string; value: number }[] = [...outputUtxos];
-      //     if (remainder >= DUST_AMOUNT) {
-      //       newOutputs.push({
-      //         address: fromAddress,
-      //         value: remainder
-      //       });
-      //     }
-      //     const retFee = calcFee({
-      //       inputs: inputUtxos,
-      //       outputs: newOutputs,
-      //       feeRate: feeRate,
-      //       addressType: getAddressType(fromAddress),
-      //       network: networkType
-      //     });
-      //     if (autoAdjust) {
-      //       fee = retFee;
-      //     }
-      //     v = remainder - retFee;
-      //     if (v >= 0) {
-      //       if (v >= DUST_AMOUNT) {
-      //         fee = retFee;
-      //       } else {
-      //         fee = retFee + v;
-      //       }
-      //       break;
-      //     }
-      //   }
-      // }
-      // console.timeEnd('calcFee');
-      // const psbt = new Psbt({ network: toPsbtNetwork(networkType) });
-      // // const psbt = new Psbt({ network: bitcoin.networks.bitcoin });
-      // if (autoAdjust) {
-      //   psbt.addOutput({
-      //     address: toAddressInfo.address,
-      //     value: toAmount - fee
-      //   });
-      // } else {
-      //   console.log('11111')
-      //   if (v < 0) {
-      //     return {
-      //       psbtHex: '',
-      //       rawtx: '',
-      //       toAddressInfo,
-      //       fee,
-      //       err: 'Insufficient balance.'
-      //     };
-      //   } else if (v >= DUST_AMOUNT) {
-      //     outputUtxos.push({
-      //       address: fromAddress,
-      //       value: v
-      //     });
-      //   }
-      //   for (const utxo of outputUtxos) {
-      //     psbt.addOutput(utxo);
-      //   }
-      // }
-      // const { output } = detectAddressTypeToScripthash(fromAddress, networkType);
-      // for (const utxo of inputUtxos) {
-      //   const utxoInput = utxoToInput({
-      //     utxo,
-      //     pubkey: account.pubkey,
-      //     addressType: getAddressType(fromAddress),
-      //     script: output
-      //   });
-      //   if (utxoInput) {
-      //     psbt.addInput(utxoInput.data);
-      //   } else {
-      //     return {
-      //       psbtHex: '',
-      //       rawtx: '',
-      //       toAddressInfo,
-      //       err: 'Invalid fromAddress.'
-      //     };
-      //   }
-      // }
+
       const psbtHex = psbt.toHex();
       const s = await wallet.signPsbtReturnHex(psbtHex, { autoFinalized: true });
       const signPsbt = Psbt.fromHex(s);
@@ -457,7 +370,7 @@ export function useCreateBitcoinTxCallback() {
       };
       return rawTxInfo;
     },
-    [dispatch, wallet, fromAddress, atomicals, networkType]
+    [dispatch, wallet, fromAddress, atomicals, networkType, advanced]
   );
 }
 
@@ -468,6 +381,8 @@ export function useCreateARC20TxCallback() {
   const fromAddress = useAccountAddress();
   const atomicals = useAtomicals();
   const networkType = useNetworkType();
+  const advanced = useAdvanced()
+
   return useCallback(
     async (
       transferOptions: TransferFtConfigInterface,
@@ -497,7 +412,8 @@ export function useCreateARC20TxCallback() {
       }
       const psbt = toPsbt({
         tx: txResult.ok as TxOk,
-        pubkey: account.pubkey
+        pubkey: account.pubkey,
+        rbf: advanced.rbf
       });
       const psbtHex = psbt.toHex();
 
@@ -513,7 +429,7 @@ export function useCreateARC20TxCallback() {
       };
       return rawTxInfo;
     },
-    [dispatch, wallet, account, fromAddress, atomicals, networkType]
+    [dispatch, wallet, account, fromAddress, atomicals, networkType, advanced]
   );
 }
 
@@ -524,6 +440,8 @@ export function useCreateARCNFTTxCallback() {
   const fromAddress = useAccountAddress();
   const atomicals = useAtomicals();
   const networkType = useNetworkType();
+  const advanced = useAdvanced()
+
   return useCallback(
     async (
       transferOptions: {
@@ -551,7 +469,8 @@ export function useCreateARCNFTTxCallback() {
       }
       const psbt = toPsbt({
         tx: result.ok as TxOk,
-        pubkey: account.pubkey
+        pubkey: account.pubkey,
+        rbf: advanced.rbf
       });
       const psbtHex = psbt.toHex();
 
@@ -567,7 +486,7 @@ export function useCreateARCNFTTxCallback() {
       };
       return rawTxInfo;
     },
-    [dispatch, wallet, account, fromAddress, atomicals, networkType]
+    [dispatch, wallet, account, fromAddress, atomicals, networkType, advanced]
   );
 }
 

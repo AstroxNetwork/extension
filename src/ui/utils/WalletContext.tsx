@@ -216,6 +216,10 @@ export interface WalletController {
 
   setAtomicalCustomEndPoint: (networkType: NetworkType, host: string) => void
 
+  getAdvanced: () => {rbf: boolean; securityCheck: boolean};
+
+  setAdvanced: (advanced) => void
+
   getAtomicals(address: string, network: NetworkType): Promise<IWalletBalance>;
 
   expireUICachedData(address: string): Promise<void>;

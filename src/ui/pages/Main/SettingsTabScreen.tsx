@@ -71,6 +71,14 @@ const SettingList: Setting[] = [
     right: true
   },
   {
+    label: 'Advanced',
+    value: 'For proficient users only',
+    desc: 'For proficient users only',
+    action: 'advanced',
+    route: '/settings/advanced',
+    right: true
+  },
+  {
     label: 'Change Password',
     value: 'Change your lockscreen password',
     desc: '',
@@ -136,6 +144,10 @@ export default function SettingsTabScreen() {
     if (v.action == 'networkType') {
       v.value = NETWORK_TYPES[networkType].label;
     }
+
+    // if (v.action == 'advanced') {
+    //   v.value = NETWORK_TYPES[networkType].label;
+    // }
 
     if (v.action == 'changeEndPoint') {
       v.value = ATOM_NETWORK_TYPES.filter(o => o.validNames.includes(networkType)).find(o => o.value === atomNetworkType)?.label || 'Custom';

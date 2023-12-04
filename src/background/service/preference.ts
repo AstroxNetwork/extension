@@ -46,6 +46,10 @@ export interface PreferenceStore {
   customEndPoint: {
     [key: string]: string;
   };
+  advanced: {
+    rbf: boolean;
+    securityCheck: boolean;
+  },
   keyringAlianNames: {
     [key: string]: string;
   };
@@ -119,6 +123,10 @@ class PreferenceService {
         addressType: AddressType.M44_P2TR,
         networkType: NetworkType.MAINNET,
         atomicalEndPoint: ELECTRUMX_HTTP_PROXY,
+        advanced: {
+          securityCheck: true,
+          rbf: false,
+        },
         customEndPoint: {
           [NetworkType.MAINNET]: '',
           [NetworkType.TESTNET]: '',
@@ -174,6 +182,12 @@ class PreferenceService {
       this.store.customEndPoint = {};
     }
 
+    if (!this.store.advanced) {
+      this.store.advanced = {
+        rbf: false,
+        securityCheck: true,
+      }
+    }
 
     if(!this.store.atomicalEndPoint) {
       this.store.atomicalEndPoint = ELECTRUMX_HTTP_PROXY;
@@ -379,6 +393,17 @@ class PreferenceService {
   setAtomicalCustomeEndPoint = (networkType: NetworkType, host: string) => {
     this.store.customEndPoint[networkType] = host;
   }
+
+  getAdvanced = () => {
+    return this.store.advanced;
+  };
+
+  setAdvanced = (advanced: {
+    rbf: boolean;
+    securityCheck: boolean;
+  }) => {
+    this.store.advanced = advanced;
+  };
 
   // currentKeyringIndex
   getCurrentKeyringIndex = () => {

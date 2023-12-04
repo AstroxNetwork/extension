@@ -45,6 +45,7 @@ import ARC20TxConfirmScreen from './ARC20/ARC20TxConfrimScreen';
 import EndPointScreen from './Settings/EndPointScreen';
 import TxCreateScreen from './Wallet/TxCreateScreen';
 import { useAccountAddress } from '../state/accounts/hooks';
+import AdvancedScreen from './Settings/AdvancedScreen';
 
 const routes = {
   BoostScreen: {
@@ -135,7 +136,10 @@ const routes = {
     path:  '/settings/end-point',
     element: <EndPointScreen />
   },
-
+  AdvancedScreen: {
+    path:  '/settings/advanced',
+    element: <AdvancedScreen />
+  },
   ChangePasswordScreen: {
     path: '/settings/password',
     element: <ChangePasswordScreen />
