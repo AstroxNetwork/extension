@@ -20,6 +20,7 @@ import AtomicalPreview from '@/ui/components/AtomicalPreview';
 import { IAtomicalItem } from '@/background/service/interfaces/api';
 import { Psbt } from 'bitcoinjs-lib';
 import { useAdvanced } from '@/ui/state/settings/hooks';
+import { hasSighashType } from '@/ui/utils/local_wallet';
 
 interface Props {
   header?: React.ReactNode;
@@ -338,8 +339,10 @@ export default function SignPsbt({
         }
       }
     }
-    // const psbt = Psbt.fromHex(psbtHex);
-    // console.log('psbt', psbt)
+    const psbt = Psbt.fromHex(psbtHex);
+    console.log('psbt', psbt)
+    console.log('psbtHex', psbtHex)
+
 
     // else if (type === TxType.SEND_INSCRIPTION) {
     //   if (!psbtHex && toAddress && inscriptionId) {
@@ -422,6 +425,17 @@ export default function SignPsbt({
       setWarning('Unconfirmed funds detected, risking burn!! Proceed at risk!');
       atomicalFTvalide =  false
     }
+    // const hasAll =  hasSighashType(psbtHex, 'SIGHASH_ALL')
+    const hasNone =  hasSighashType(psbtHex, 'SIGHASH_NONE')
+    // const hasSingle =  hasSighashType(psbtHex, 'SIGHASH_SINGLE')
+    // const hasAny =  hasSighashType(psbtHex, 'SIGHASH_ANYONECANPAY')
+    // alert('hasAll:' + hasAll + ' hasNone:' + hasNone + ' hasSingle:' + hasSingle + ' hasAny:' + hasAny)
+
+    if(hasNone) {
+      setWarningVisible(true);
+      setWarning('Unsafe signature detected! Proceed at your own risk!');
+      atomicalFTvalide =  false
+    }
     // atomicalFTvalide =  false
     setTxInfo({
       decodedPsbt: {
@@ -448,13 +462,7 @@ export default function SignPsbt({
 
   useEffect(() => {
     if(atomicals.address) {
-      if(atomicals.error) {
-        setIsWarningVisible(true);
-        setIsCloseWindow(true)
-        setWarning(atomicals.error);
-      } else {
-        init();
-      }
+      init();
     }
   }, [atomicals.address]);
 

@@ -6,6 +6,7 @@ import ECPairFactory,{ ECPairInterface } from 'ecpair';
 import { AddressType, NetworkType } from '@/shared/types';
 import { UTXO } from '@/background/service/interfaces/utxo';
 import { publicKeyToAddress, toPsbtNetwork } from '@/background/utils/tx-utils';
+import * as psbt from 'psbt';
 bitcoin.initEccLib(ecc);
 
 
@@ -76,6 +77,65 @@ export function utxoToInput({ utxo, script, addressType, pubkey }: {
   } else {
     throw new Error('unsupported address type');
   }
+}
+
+enum SighashType {
+  ALL = 0x01,
+  NONE = 0x02,
+  SINGLE = 0x03,
+  ANYONECANPAY = 0x80,
+
+  ALL_ANYONECANPAY = SighashType.ALL | SighashType.ANYONECANPAY,
+  NONE_ANYONECANPAY = SighashType.NONE | SighashType.ANYONECANPAY,
+  SINGLE_ANYONECANPAY = SighashType.SINGLE | SighashType.ANYONECANPAY,
+}
+
+export type SighashTypeName =
+  | 'SIGHASH_ALL'
+  | 'SIGHASH_NONE'
+  | 'SIGHASH_SINGLE'
+  | 'SIGHASH_ANYONECANPAY'
+  | 'SIGHASH_ALL | SIGHASH_ANYONECANPAY'
+  | 'SIGHASH_NONE | SIGHASH_ANYONECANPAY'
+  | 'SIGHASH_SINGLE | SIGHASH_ANYONECANPAY';
+
+function getSighashTypeName(sighashType: SighashType): string | undefined {
+  switch (sighashType) {
+    case SighashType.ALL:
+      return 'SIGHASH_ALL';
+    case SighashType.NONE:
+      return 'SIGHASH_NONE';
+    case SighashType.SINGLE:
+      return 'SIGHASH_SINGLE';
+    case SighashType.ANYONECANPAY:
+      return 'SIGHASH_ANYONECANPAY';
+    case SighashType.ALL_ANYONECANPAY:
+      return 'SIGHASH_ALL | SIGHASH_ANYONECANPAY';
+    case SighashType.NONE_ANYONECANPAY:
+      return 'SIGHASH_NONE | SIGHASH_ANYONECANPAY';
+    case SighashType.SINGLE_ANYONECANPAY:
+      return 'SIGHASH_SINGLE | SIGHASH_ANYONECANPAY';
+    default:
+      return undefined;
+  }
+}
+
+export function decodePsbt(psbtHex: string) {
+  const decoded = psbt.decodePsbt({ ecp: ecc, psbt: psbtHex });
+  for (const input of decoded.inputs) {
+    input.sighash_type_name = getSighashTypeName(input.sighash_type);
+  }
+  return decoded;
+}
+
+export function hasSighashType(psbtHex: string, sighashType: SighashTypeName) {
+  const decoded = decodePsbt(psbtHex);
+  for (const input of decoded.inputs) {
+    if (getSighashTypeName(input.sighash_type)?.includes(sighashType)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 

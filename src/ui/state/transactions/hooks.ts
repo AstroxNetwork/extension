@@ -56,7 +56,7 @@ export function buildTx({
 }: BuildTxOptions): TxResult {
   const baseOutputs = outputs.map((e) => ({ ...e }));
   const baseInputs = inputs.slice();
-  const addressType = getAddressType(address);
+  const addressType = getAddressType(address)!;
   let value = 0;
   const checkRemainder = (remainder: number) => {
     if (remainder >= 0) {
@@ -64,7 +64,7 @@ export function buildTx({
       if (remainder >= DUST_AMOUNT) {
         newOutputs.push({
           address: address,
-          value: remainder
+          value: remainder,
         });
       }
       const retFee = calcFee({
@@ -73,18 +73,15 @@ export function buildTx({
         feeRate,
         addressType,
         network,
-        autoFinalized
+        autoFinalized,
       });
       const v = remainder - retFee;
       if (v >= 0) {
         if (v >= DUST_AMOUNT) {
-          const finOutputs = [
-            ...outputs,
-            {
-              address: address,
-              value: v
-            }
-          ];
+          const finOutputs = [...outputs, {
+            address: address,
+            value: v,
+          }];
           return {
             ok: {
               fee: baseInputs.reduce((a, b) => a + b.value, 0) - finOutputs.reduce((a, b) => a + b.value, 0),
@@ -93,8 +90,8 @@ export function buildTx({
               network,
               address,
               addressType,
-              outputs: finOutputs
-            }
+              outputs: finOutputs,
+            },
           };
         } else {
           return {
@@ -105,8 +102,8 @@ export function buildTx({
               addressType,
               fee: baseInputs.reduce((a, b) => a + b.value, 0) - outputs.reduce((a, b) => a + b.value, 0),
               inputs: baseInputs,
-              outputs
-            }
+              outputs,
+            },
           };
         }
       }
@@ -119,116 +116,142 @@ export function buildTx({
   if (balances.length > 2) {
     const base = {
       ...balances[0],
-      value: SATOSHI_MAX
+      value: SATOSHI_MAX,
     };
     const v1 = calcFee({
-      inputs: [base],
+      inputs: [
+        base,
+      ],
       outputs: baseOutputs,
       feeRate,
       addressType,
       network,
-      autoFinalized
+      autoFinalized,
     });
     const v2 = calcFee({
-      inputs: [base, balances[1]],
+      inputs: [
+        base,
+        balances[1],
+      ],
       outputs: baseOutputs,
       feeRate,
       addressType,
       network,
-      autoFinalized
+      autoFinalized,
     });
-    const offsetInput = v2 - v1;
-    let additionalOutput = 0;
-    for (const utxo of balances) {
-      if (utxo.value <= offsetInput) {
+    const perInput = v2 - v1;
+    let fast = true;
+    for (let i = 0; i < balances.length; i++) {
+      const utxo = balances[i];
+      if (utxo.value <= perInput) {
         return {
-          error: 'Insufficient balance: Marginal cost of adding UTXOs exceeds the current UTXO balance'
+          error: 'No suitable UTXO is available. Please consider lowering the transaction fee rate.',
         };
       }
       value += utxo.value;
       baseInputs.push(utxo);
       const remainder = value - amount;
-      if (remainder >= 0) {
-        const fee = v1 + (baseInputs.length - 1) * offsetInput + additionalOutput;
-        const num = remainder - fee;
-        if (num >= DUST_AMOUNT) {
-          if (!additionalOutput) {
-            const v3 = calcFee({
-              inputs: [base],
-              outputs: [
-                ...baseOutputs,
-                {
-                  address: address,
-                  value: num
-                }
-              ],
-              feeRate,
-              addressType,
-              network,
-              autoFinalized
-            });
-            additionalOutput = v3 - v1;
-            const rr = num - additionalOutput;
-            if (rr >= DUST_AMOUNT) {
-              const finOutputs = [
-                ...outputs,
-                {
-                  address: address,
-                  value: rr
-                }
-              ];
-              return {
-                ok: {
-                  fee: baseInputs.reduce((a, b) => a + b.value, 0) - finOutputs.reduce((a, b) => a + b.value, 0),
-                  inputs: baseInputs,
-                  feeRate,
-                  network,
-                  address,
-                  addressType,
-                  outputs: finOutputs
-                }
-              };
+      if (fast) {
+        if (remainder >= 0) {
+          const fee = v1 + (baseInputs.length - 1) * perInput;
+          const num = remainder - fee;
+          if (num >= 0) {
+            fast = false;
+            v = checkRemainder(remainder);
+            if (v) {
+              return v;
             }
-            continue;
           }
-          const finOutputs = [
-            ...outputs,
-            {
-              address: address,
-              value: num
-            }
-          ];
-          return {
-            ok: {
-              fee: baseInputs.reduce((a, b) => a + b.value, 0) - finOutputs.reduce((a, b) => a + b.value, 0),
-              inputs: baseInputs,
-              feeRate,
-              network,
-              address,
-              addressType,
-              outputs: finOutputs
-            }
-          };
-        } else if (num >= 0) {
-          return {
-            ok: {
-              feeRate,
-              network,
-              address,
-              addressType,
-              fee: baseInputs.reduce((a, b) => a + b.value, 0) - outputs.reduce((a, b) => a + b.value, 0),
-              inputs: baseInputs,
-              outputs: outputs
-            }
-          };
+          // if (num >= DUST_AMOUNT) {
+          //   if (!perOutput) {
+          //     const v3 = calcFee({
+          //       inputs: [base],
+          //       outputs: [
+          //         ...baseOutputs,
+          //         {
+          //           address: address,
+          //           value: num,
+          //         },
+          //       ],
+          //       feeRate,
+          //       addressType,
+          //       network,
+          //       autoFinalized,
+          //     });
+          //     perOutput = v3 - v1;
+          //     const rr = num - perOutput;
+          //     if (rr >= DUST_AMOUNT) {
+          //       const finOutputs = [
+          //         ...outputs,
+          //         {
+          //           address: address,
+          //           value: rr,
+          //         },
+          //       ];
+          //       return {
+          //         ok: {
+          //           fee: baseInputs.reduce((a, b) => a + b.value, 0) - finOutputs.reduce((a, b) => a + b.value, 0),
+          //           inputs: baseInputs,
+          //           feeRate,
+          //           network,
+          //           address,
+          //           addressType,
+          //           outputs: finOutputs,
+          //           perInput,
+          //           perOutput,
+          //         } as any,
+          //       };
+          //     }
+          //     continue;
+          //   }
+          //   const finOutputs = [
+          //     ...outputs,
+          //     {
+          //       address: address,
+          //       value: num,
+          //     },
+          //   ];
+          //   return {
+          //     ok: {
+          //       fee: baseInputs.reduce((a, b) => a + b.value, 0) - finOutputs.reduce((a, b) => a + b.value, 0),
+          //       inputs: baseInputs,
+          //       feeRate,
+          //       network,
+          //       address,
+          //       addressType,
+          //       outputs: finOutputs,
+          //       perInput,
+          //       perOutput,
+          //     } as any,
+          //   };
+          // } else if (num >= 0) {
+          //   return {
+          //     ok: {
+          //       feeRate,
+          //       network,
+          //       address,
+          //       addressType,
+          //       fee: baseInputs.reduce((a, b) => a + b.value, 0) - outputs.reduce((a, b) => a + b.value, 0),
+          //       inputs: baseInputs,
+          //       outputs: outputs,
+          //       perInput,
+          //       perOutput,
+          //     } as any,
+          //   };
+          // }
+        }
+      } else {
+        v = checkRemainder(remainder);
+        if (v) {
+          return v;
         }
       }
     }
     return {
-      error: 'Insufficient balance'
-    };
+      error: 'Insufficient balance',
+      perInput,
+    } as any;
   }
-
   for (const utxo of balances) {
     value += utxo.value;
     baseInputs.push(utxo);
@@ -238,7 +261,7 @@ export function buildTx({
     }
   }
   return {
-    error: 'Insufficient balance'
+    error: 'Insufficient balance',
   };
 }
 

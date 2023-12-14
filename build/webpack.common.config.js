@@ -513,7 +513,7 @@ const config = (env) => {
         crypto: require.resolve('crypto-browserify')
         // buffer: require.resolve('buffer/')
       },
-      extensions: ['.js', 'jsx', '.ts', '.tsx']
+      extensions: ['.js', 'jsx', '.ts', '.tsx', '.json']
     },
     stats: 'minimal',
     // optimization: {
